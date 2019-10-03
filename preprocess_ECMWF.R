@@ -37,7 +37,7 @@ month_days <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 # Parameters for new NetCDF file
 dims <- mapply(ncdim_def, name=c('Day', 'IssueTime', "LeadTime", 'Member'), units=c('', 'Hour', "Hours", ""), 
-               vals=list(day_indx, 1:24, seq(0, 18, by=6), 1:50), 
+               vals=list(day_indx, seq(0, 18, by=6), 1:24, 1:50), 
                longname=c("Day number starting Jan 1, 2018", "Forecast time of issue", "Forecast lead time", "Ensemble member"), 
                SIMPLIFY = FALSE)
 pvar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
