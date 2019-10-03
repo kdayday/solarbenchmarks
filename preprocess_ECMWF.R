@@ -1,5 +1,5 @@
 # Author: Kate Doubleday
-# Last updated: 9/27/2019
+# Last updated: 10/3/2019
 # This script pre-processes ECMWF NETCDF files to extract their 51 ensemble forecasts of GHI from the SSRD (surface solar radiation downwards) ECMWF parameter.
 # Estimates for the 7 SURFRAD sites are interpolated from the nearest 4 grid points, given a 0.2x0.2 degree lat/lon grid. 
 # GHI forecast time resolution is hourly average.
@@ -67,6 +67,7 @@ get_daily_irr <- function(day, month, site) {
   
   # Calculate irradiance from ssrd 
   irr <- apply(ssrd, MARGIN=c(1,3), FUN=diff)/3600
+  irr <- apply(irr, MARGIN=c(1,2,3), FUN=round)
   # Clean: truncate small negative values to 0
   irr[irr<0] <- 0
   return(irr)

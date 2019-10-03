@@ -49,7 +49,7 @@ get_daily_data <- function(fname, site) {
   GHI_min[GHI_min<0] <- 0
 
   # Average to hourly to match ECMWF forecasts
-  GHI <- sapply(1:24, FUN=function(i) {mean(GHI_min[(60*(i-1)+1):(60*i)])})
+  GHI <- sapply(1:24, FUN=function(i) {round(mean(GHI_min[(60*(i-1)+1):(60*i)]))})
   
   zen_min <- all_data[, "zen"]
   sun_up <- sapply(1:24, FUN=function(i) {any(zen_min[(60*(i-1)+1):(60*i)]<90)})
