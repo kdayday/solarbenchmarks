@@ -1,5 +1,5 @@
 # Author: Kate Doubleday
-# Last updated: 10/2/2019
+# Last updated: 10/3/2019
 # This script pre-processes SURFRAD files to make hourly averages that match the hourly average ECMWF forecasts. 
 # -----------------------------------------------------------------
 # Load dependencies
@@ -27,7 +27,8 @@ dims <- mapply(ncdim_def, name=c('Day', 'Hour'), units=c('', ''),
                vals=list(1:365, 1:24), 
                longname=c("Day number starting Jan 1, 2018", "Hour of day"), 
                SIMPLIFY = FALSE)
-pvar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
+ivar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
+svar <- ncvar_def("sun_up", "", dims, compression = 9, prec="integer")
 
 # -----------------------------------------------------------------
 #' A helper function to import each daily SURFRAD file and average hourly
@@ -35,7 +36,7 @@ pvar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
 #' @param month Month number
 #' @param day Day of month number
 #' @return an array of forecasts
-get_daily_irr <- function(fname, site) {
+get_daily_data <- function(fname, site) {
   all_data <- read.table(file.path(input_directory, site, fname), skip=2, col.names=c(
     "year","jday","month","day","hour","min",'dt', "zen","dw_solar","qc_dwsolar","uw_solar","qc_uwsolar","direct_n",
     "qc_direct_n","diffuse","qc_diffuse","dw_ir", "qc_dwir","dw_casetemp","qc_dwcasetemp","dw_dometemp",
@@ -50,7 +51,10 @@ get_daily_irr <- function(fname, site) {
   # Average to hourly to match ECMWF forecasts
   GHI <- sapply(1:24, FUN=function(i) {mean(GHI_min[(60*(i-1)+1):(60*i)])})
   
-  return(GHI)  
+  zen_min <- all_data[, "zen"]
+  sun_up <- sapply(1:24, FUN=function(i) {any(zen_min[(60*(i-1)+1):(60*i)]<90)})
+  
+  return(matrix(c(GHI, sun_up), ncol=2))  
 }
 
 # -----------------------------------------------------------------
@@ -58,13 +62,16 @@ get_daily_irr <- function(fname, site) {
 #' @param site Site name
 export_site_netcdf <- function(site) {
   daily_files <- list.files(file.path(input_directory, site), pattern=".dat")
-  
-  # Get irradiance array for this site
-  irr <- t(sapply(daily_files, FUN=get_daily_irr, site=site, simplify="array"))
-  
+ 
+  # Get hourly irradiance and indicator if sun is up, based on solar zenith angle
+  hourly_data <- sapply(daily_files, FUN=get_daily_data, site=site, simplify="array")
+  irr <- t(hourly_data[,1,])
+  sun_up <- t(hourly_data[,2,])
+   
   # Export new NetCDF file
-  nc_new <- nc_create(file.path(output_directory, paste(site, ".nc", sep='')), pvar)
-  ncvar_put(nc_new, pvar, irr, count=pvar[['varsize']])
+  nc_new <- nc_create(file.path(output_directory, paste(site, ".nc", sep='')), list(ivar, svar))
+  ncvar_put(nc_new, ivar, irr, count=ivar[['varsize']])
+  ncvar_put(nc_new, svar, sun_up, count=svar[['varsize']])
   nc_close(nc_new)
 }
 
