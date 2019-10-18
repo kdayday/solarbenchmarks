@@ -22,14 +22,6 @@ site_names <- c("Bondville_IL",
                 "Penn_State_PA",
                 "Sioux_Falls_SD")
 
-# Parameters for new NetCDF file
-dims <- mapply(ncdim_def, name=c('Day', 'Hour'), units=c('', ''), 
-               vals=list(1:365, 1:24), 
-               longname=c("Day number starting Jan 1, 2018", "Hour of day"), 
-               SIMPLIFY = FALSE)
-ivar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
-svar <- ncvar_def("sun_up", "", dims, compression = 9, prec="integer")
-
 # -----------------------------------------------------------------
 #' A helper function to import each daily SURFRAD file and average hourly
 #' @param site Site name
@@ -37,7 +29,7 @@ svar <- ncvar_def("sun_up", "", dims, compression = 9, prec="integer")
 #' @param day Day of month number
 #' @return an array of forecasts
 get_daily_data <- function(fname, site) {
-  all_data <- read.table(file.path(input_directory, site, fname), skip=2, col.names=c(
+  all_data <- read.table(file.path(input_directory, site, year, fname), skip=2, col.names=c(
     "year","jday","month","day","hour","min",'dt', "zen","dw_solar","qc_dwsolar","uw_solar","qc_uwsolar","direct_n",
     "qc_direct_n","diffuse","qc_diffuse","dw_ir", "qc_dwir","dw_casetemp","qc_dwcasetemp","dw_dometemp",
     "qc_dwdometemp","uw_ir","qc_uwir","uw_casetemp", "qc_uwcasetemp","uw_dometemp","qc_uwdometemp","uvb",
@@ -60,8 +52,9 @@ get_daily_data <- function(fname, site) {
 # -----------------------------------------------------------------
 #' A helper function to gather the daily files into a single irradiance array for a given site and export to a new NetCDF
 #' @param site Site name
-export_site_netcdf <- function(site) {
-  daily_files <- list.files(file.path(input_directory, site), pattern=".dat")
+#' @param year Data year
+export_site_netcdf <- function(site, year) {
+  daily_files <- list.files(file.path(input_directory, site, year), pattern=".dat")
  
   # Get hourly irradiance and indicator if sun is up, based on solar zenith angle
   hourly_data <- sapply(daily_files, FUN=get_daily_data, site=site, simplify="array")
@@ -69,7 +62,7 @@ export_site_netcdf <- function(site) {
   sun_up <- t(hourly_data[,2,])
    
   # Export new NetCDF file
-  nc_new <- nc_create(file.path(output_directory, paste(site, ".nc", sep='')), list(ivar, svar))
+  nc_new <- nc_create(file.path(output_directory, paste(site, "_", year, ".nc", sep='')), list(ivar, svar))
   ncvar_put(nc_new, ivar, irr, count=ivar[['varsize']])
   ncvar_put(nc_new, svar, sun_up, count=svar[['varsize']])
   nc_close(nc_new)
@@ -77,4 +70,19 @@ export_site_netcdf <- function(site) {
 
 # -----------------------------------------------------------------
 # Cycle through the sites, exporting their site-specific irradiance NetCDF's
-for (site in site_names) export_site_netcdf(site)
+for (year in c(2017, 2018)) {
+  # Parameters for new NetCDF file
+  if (year==2017) {
+    dims <- mapply(ncdim_def, name=c('Day', 'Hour'), units=c('', ''), vals=list(1:20, 1:24), 
+                   longname=c("Day number starting Jan 1, 2018", "Hour of day"), SIMPLIFY = FALSE)
+  } else {
+    dims <- mapply(ncdim_def, name=c('Day', 'Hour'), units=c('', ''), vals=list(1:365, 1:24), 
+                   longname=c("Day number starting Jan 1, 2018", "Hour of day"), SIMPLIFY = FALSE)
+  }
+  
+  ivar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
+  svar <- ncvar_def("sun_up", "", dims, compression = 9, prec="integer")
+  
+  for (site in site_names) export_site_netcdf(site, year)  
+}
+
