@@ -8,6 +8,7 @@
 library(here)
 library(ncdf4)
 library(pracma)
+library(abind)
 
 # -----------------------------------------------------------------
 # Define constants
@@ -37,27 +38,36 @@ month_days <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 # Parameters for new NetCDF file
 dims <- mapply(ncdim_def, name=c('Day', 'IssueTime', "LeadTime", 'Member'), units=c('', 'Hour', "Hours", ""), 
-               vals=list(day_indx, seq(0, 18, by=6), 1:24, 1:50), 
+               vals=list(day_indx, seq(0, 18, by=6), 1:24, 1:51), 
                longname=c("Day number starting Jan 1, 2018", "Forecast time of issue", "Forecast lead time", "Ensemble member"), 
                SIMPLIFY = FALSE)
 pvar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
 
 # -----------------------------------------------------------------
 #' A helper function to import each daily netCDF, spatially interpolate, and transform to irradiance
+#' @param day Day of year index
 #' @param site Site name
-#' @param month Month number
-#' @param day Day of month number
 #' @return an array of forecasts
-get_daily_irr <- function(day, month, site) {
+get_daily_irr <- function(day, site) {
+  month <- min(which(day <=cumsum(month_days)))
+  day_of_month <- day - ifelse(month>1, sum(month_days[1:(month-1)]), 0)
+  
   xp <- site_coord[[site]]$N
   yp <- site_coord[[site]]$W
     
   # Extract closest spatial data from NetCDF file
-  nc <- nc_open(file.path(input_directory, paste("north_america_", ifelse(month<10, paste(0, month, sep=''), month), ifelse(day<10, paste(0, day, sep=''), day), ".nc", sep='')))
+  nc <- nc_open(file.path(input_directory, paste("north_america_", ifelse(month<10, paste(0, month, sep=''), month), ifelse(day_of_month<10, paste(0, day_of_month, sep=''), day_of_month), ".nc", sep='')))
   lon_indx <- which(round(nc$dim$longitude$vals, 1)==-ceiling(yp*5)/5)
   lat_indx <- which(round(nc$dim$latitude$vals, 1)==ceiling(xp*5)/5)
   ssrd_grid <- ncvar_get(nc, varid="ssrd", start=c(lon_indx,lat_indx,1,1,1), count=c(2,2,-1,-1,-1))
   nc_close(nc)
+  
+  nc <- nc_open(file.path(input_directory, paste("north_america_ctrl_", ifelse(month<10, paste(0, month, sep=''), month), ifelse(day_of_month<10, paste(0, day_of_month, sep=''), day_of_month), ".nc", sep='')))
+  ssrd_ctrl_grid <- ncvar_get(nc, varid="ssrd", start=c(lon_indx,lat_indx,1,1), count=c(2,2,-1,-1))
+  nc_close(nc)
+  ssrd_ctrl_grid <- array(ssrd_ctrl_grid, dim=append(dim(ssrd_ctrl_grid), 1, after = 2))
+  
+  ssrd_grid <- abind(ssrd_ctrl_grid, ssrd_grid, along=3)
   
   # Spatially interpolate to SURFRAD coordinates. 
   x <- nc$dim$latitude$vals[c(lat_indx+1, lat_indx)] # lat coordinates must be nondecreasing
@@ -78,7 +88,7 @@ get_daily_irr <- function(day, month, site) {
 #' @param site Site name
 export_site_netcdf <- function(site) {
   # Get irradiance array for this site
-  irr <- sapply(day_indx, FUN=function(d) {get_daily_irr(d, month=min(which(d <=cumsum(month_days))), site=site)}, simplify="array")
+  irr <- sapply(day_indx, FUN=get_daily_irr, site=site, simplify="array")
   # Reformat to dimensions: [day]x[issue time]x[forecast horizon]x[members]
   irr <- aperm(irr, c(4,3,1,2))
   
