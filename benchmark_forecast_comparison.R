@@ -35,7 +35,7 @@ percentiles <- seq(0.01, 0.99, by=0.01)
 intervals <- seq(0.1, 0.9, by=0.1) # Central intervals for sharpness evaluation
 num_peen <- 20 # Number of members in the persistence ensemble
 
-forecast_names<- c("Climatology", "Ch-PeEn", "ECMWF Ensemble", "PeEn", "Gaussian")
+forecast_names<- c("Climatology", "Ch-PeEn", "PeEn", "ECMWF Ensemble", "ECMWF Gaussian")
 
 metric_names <- c("CRPS", "Left-tail weighted CRPS", "Center weighted CRPS", "Right-tail weighted CRPS")
 
@@ -77,7 +77,7 @@ get_site_data <- function(site, metrics_df, reliability_df, interval_width_df) {
       fc <- forecast_Ch_PeEn(tel, percentiles, sun_up)    
     } else if (method=="PeEn") {
       fc <- forecast_PeEn(tel, percentiles, sun_up, num_peen, oos_tel)    
-    } else if (method=="Gaussian"){
+    } else if (method=="ECMWF Gaussian"){
       fc <- forecast_Gaussian(nwp, tel, percentiles, sun_up)
     } else stop(paste("Forecast method", method, "not recognized"))
   
