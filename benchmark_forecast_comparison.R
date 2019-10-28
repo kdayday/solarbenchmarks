@@ -8,7 +8,10 @@ library(ncdf4)
 library(pracma)
 library(truncnorm)
 library(ggplot2)
+library(ggfan)
 library(reshape2)
+library(tidyr)
+library(tibble)
 source("evaluation_functions.R")
 source("forecast_methods.R")
 
@@ -85,6 +88,11 @@ get_site_data <- function(site, metrics_df, reliability_df, interval_width_df) {
     
     reliability_df[site, method,] <- reliability(fc, as.vector(t(tel)), as.vector(t(sun_up)), percentiles)
     interval_width_df[site, method,] <- interval_width(fc, as.vector(t(sun_up)), intervals = intervals)$widths
+    
+    # Export sample forecasts
+    g <- plot_fanplot(fc, as.vector(t(tel)), c(1, 72))
+    ggsave(file.path(output_directory, paste(site, method, "sample.pdf", sep="_")), height=4, width=6)
+    save(g, file=file.path(output_directory, paste(site, method, "sample.R", sep="_")))
   }
   
   return(list(metrics_df=metrics_df, reliability_df=reliability_df, interval_width_df=interval_width_df))

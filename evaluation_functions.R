@@ -72,3 +72,17 @@ reliability <- function(fc, tel, sun_up, percentiles) {
   obs_proportion <- counts/sum(sun_up, na.rm=T)
   return(obs_proportion)
 }
+
+#' Plot a fan plot comparing the forecast quantiles to the telemetry
+#'
+#' @param fc A [valid time x quantile] matrix of probabilistic quantile forecasts, with column names giving the [0,1] percentiles of the forecast
+#' @param tel A vector of the telemetry values
+#' @param window A (min, max) vector of indices, corresponding to the rows of fc to plot
+plot_fanplot <- function(fc, tel, window) {
+  df <- rowid_to_column(data.frame(fc[window[1]:window[2],], check.names=F), var="x") 
+  df <- gather(df, key="q", value="y", -x, convert=T)
+  g <- ggplot(df,  aes(x=x,y=y,quantile=q)) + geom_fan() +
+    geom_line(mapping=aes(x=x, y=y), data=data.frame(x=seq_len(diff(window)+1), y=tel[window[1]:window[2]]), col="chocolate3", inherit.aes = F) +
+    theme_bw() + xlab("UTC Time (hours)") + ylab(expression(paste("Irradiance (W/m"^"2", ")")))  +
+    scale_x_continuous(breaks=seq(0, diff(window)+1, by=6))
+}
