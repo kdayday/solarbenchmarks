@@ -80,7 +80,7 @@ get_site_data <- function(site, metrics_df, reliability_df, interval_width_df) {
     metrics_df[site, method, "Center weighted CRPS"] <- qwCRPS(fc, as.vector(t(tel)), as.vector(t(sun_up)), weighting = "center")
     metrics_df[site, method, "Right-tail weighted CRPS"] <- qwCRPS(fc, as.vector(t(tel)), as.vector(t(sun_up)), weighting = "right")
     
-    reliability_df[site, method,] <- reliability(fc, as.vector(t(tel)), as.vector(t(sun_up)))
+    reliability_df[site, method,] <- reliability(fc, as.vector(t(tel)), as.vector(t(sun_up)), percentiles)
     interval_width_df[site, method,] <- interval_width(fc, as.vector(t(sun_up)), intervals = intervals)$widths
   }
   
