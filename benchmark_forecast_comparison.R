@@ -6,6 +6,7 @@
 library(here)
 library(ncdf4)
 library(pracma)
+library(truncnorm)
 library(ggplot2)
 library(reshape2)
 source("evaluation_functions.R")
@@ -31,7 +32,7 @@ percentiles <- seq(0.01, 0.99, by=0.01)
 intervals <- seq(0.1, 0.9, by=0.1) # Central intervals for sharpness evaluation
 num_peen <- 20 # Number of members in the persistence ensemble
 
-forecast_names<- c("Climatology", "Ch-PeEn", "ECMWF Ensemble", "PeEn")
+forecast_names<- c("Climatology", "Ch-PeEn", "ECMWF Ensemble", "PeEn", "Gaussian")
 
 metric_names <- c("CRPS", "Left-tail weighted CRPS", "Center weighted CRPS", "Right-tail weighted CRPS")
 
@@ -73,6 +74,8 @@ get_site_data <- function(site, metrics_df, reliability_df, interval_width_df) {
       fc <- forecast_Ch_PeEn(tel, percentiles, sun_up)    
     } else if (method=="PeEn") {
       fc <- forecast_PeEn(tel, percentiles, sun_up, num_peen, oos_tel)    
+    } else if (method=="Gaussian"){
+      fc <- forecast_Gaussian(nwp, tel, percentiles, sun_up)
     } else stop(paste("Forecast method", method, "not recognized"))
   
     metrics_df[site, method, "CRPS"] <- qwCRPS(fc, as.vector(t(tel)), as.vector(t(sun_up)), weighting = "none")
@@ -103,7 +106,7 @@ for (site in site_names) {
   
   ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
     xlab("Nominal proportion") + ylab("Observed proportion") + 
-    scale_shape_manual(values = c(17, 0, 16, 5)) + 
+    scale_shape_manual(values = c(17, 0, 16, 5, 4)) + 
     geom_line(data = data.frame(x=c(0,1), y=c(0,1)), mapping=aes(x=x,y=y), col="black") + 
     theme(legend.justification=c(1,0), legend.position=c(0.95,0.05), text = ggplot2::element_text(size=14))
   ggsave(file.path(output_directory, paste(site, "reliability.pdf", sep="_")))
@@ -113,7 +116,7 @@ for (site in site_names) {
   
   ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
     xlab("Central Interval (%)") + ylab(expression(paste("Average Width (W/m"^"2", ")"))) + 
-    scale_shape_manual(values = c(17, 0, 16, 5)) + 
+    scale_shape_manual(values = c(17, 0, 16, 5, 4)) + 
     theme(legend.justification=c(0,1), legend.position=c(0.05,0.95), text = ggplot2::element_text(size=14)) + 
     scale_x_continuous(breaks=intervals, labels=intervals*100)
   ggsave(file.path(output_directory, paste(site, "interval_width.pdf", sep="_")))

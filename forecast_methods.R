@@ -62,3 +62,19 @@ forecast_Ch_PeEn <- function(tel, percentiles, sun_up) {
   return(fc)
 }
 
+#' NWP Gaussian error dressing, using hourly errors of the deterministic NWP forecast to fit truncated normal distributions.
+#' 
+#' @param nwp A [day x issue time x lead time x member] matrix of NWP ensemble forecasts; First member is treated as the control member.
+#' @param tel A [day x hour] matrix of the hourly average telemetry
+#' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
+#' @param sun_up A [day x hour] matrix of logicals, indicating whether the sun is up
+forecast_Gaussian <- function(nwp, tel, percentiles, sun_up) {
+  nwp_ctrl <- matrix(aperm(nwp[,,1:(dim(nwp)[3]/dim(nwp)[2]),1], c(3,2,1)), nrow=nrow(nwp), byrow=T) # Reshape to [day x hour]
+  # Fit a standard deviation for each hour of the day, based on all residuals from that hour
+  daily_sd <- sapply(1:24, FUN=function(i) sd(nwp_ctrl[,i] - tel[,i], na.rm=T))
+  
+  fc <- t(sapply(seq_along(sun_up), FUN=function(i) {if (isTRUE(as.vector(t(sun_up))[i])) qtruncnorm(p=percentiles, a=0, mean=as.vector(t(nwp_ctrl))[i], sd=daily_sd[(i-1)%%24+1])
+    else rep(0, times=length(percentiles))}))
+  colnames(fc) <- percentiles
+  return(fc)
+}
