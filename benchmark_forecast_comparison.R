@@ -112,22 +112,24 @@ for (site in site_names) {
   # Reliability plot
   df <- melt(reliability_df[site,,], varnames=c("Method", "levels"))
   
-  ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
+  g <- ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
     xlab("Nominal proportion") + ylab("Observed proportion") + 
     scale_shape_manual(values = c(17, 0, 16, 5, 4)) + 
     geom_line(data = data.frame(x=c(0,1), y=c(0,1)), mapping=aes(x=x,y=y), col="black") + 
-    theme(legend.justification=c(1,0), legend.position=c(0.95,0.05), text = ggplot2::element_text(size=14))
-  ggsave(file.path(output_directory, paste(site, "reliability.pdf", sep="_")))
+    theme(legend.justification=c(1,0), legend.position=c(0.98,0.02), text = ggplot2::element_text(size=14))
+  ggsave(file.path(output_directory, paste(site, "reliability.pdf", sep="_")), height=4, width=8)
+  save(g, file=file.path(output_directory, paste(site, "reliability_plot.R", sep="_")))
   
   # Sharpness plot
   df <- melt(interval_width_df[site,,], varnames=c("Method", "levels"))
   
-  ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
+  g <- ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
     xlab("Central Interval (%)") + ylab(expression(paste("Average Width (W/m"^"2", ")"))) + 
     scale_shape_manual(values = c(17, 0, 16, 5, 4)) + 
-    theme(legend.justification=c(0,1), legend.position=c(0.05,0.95), text = ggplot2::element_text(size=14)) + 
+    theme(legend.justification=c(0,1), legend.position=c(0.02,0.98), text = ggplot2::element_text(size=14)) + 
     scale_x_continuous(breaks=intervals, labels=intervals*100)
-  ggsave(file.path(output_directory, paste(site, "interval_width.pdf", sep="_")))
+  ggsave(file.path(output_directory, paste(site, "interval_width.pdf", sep="_")), height=4, width=8)
+  save(g, file=file.path(output_directory, paste(site, "interval_width_plot.R", sep="_")))
 }
 
 # -----------------------------------------------------------------
