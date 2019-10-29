@@ -24,7 +24,7 @@ qwCRPS <-function(fc, tel, sun_up, weighting="none"){
 #' @param percentiles A vector (0,1) corresponding to the columns of fc
 #' @return the Quantile scores at each quantile in the fc matrix
 QS <- function(fc, tel, sun_up, percentiles) {
-  if (dim(fc)[1] != length(tel)) stop("Forecast and telemetry must be at same time resolution")
+  if (nrow(fc) != length(tel) | length(sun_up)!=length(tel)) stop("Forecast, telemetry, and sun_up must have the same time range and resolution")
   
   indicator <- sapply(seq_len(ncol(fc)), FUN=function(i) {as.integer(tel <= fc[,i])}, simplify="array")
   qs <- sapply(seq_len(ncol(fc)), FUN=function(q) mean(2*(indicator[sun_up,q]-percentiles[q])*(fc[sun_up,q]-tel[sun_up]), na.rm = TRUE))

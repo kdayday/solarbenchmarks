@@ -11,15 +11,16 @@ forecast_climatology <- function(tel, percentiles, sun_up) {
   return(fc)
 }
 
-
 #' Raw numerical weather prediction ensemble method
 #' 
 #' @param nwp A [day x issue time x lead time x member] matrix of NWP ensemble forecasts
 #' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
 #' @param sun_up A [day x hour] matrix of logicals, indicating whether the sun is up
 forecast_NWP <- function(nwp, percentiles, sun_up) {
+  if ((dim(nwp)[3]/dim(nwp)[2])%%1!=0 | (dim(nwp)[3]/dim(nwp)[2])==1) stop("Unknown handling for number of issue and lead times")
   # Simplify to most recent available forecast
   nwp_rolling <- matrix(aperm(nwp[,,1:(dim(nwp)[3]/dim(nwp)[2]),], c(3,2,1,4)), ncol=dim(nwp)[4])
+  if (nrow(nwp_rolling) !=length(sun_up)) stop("Given incompatible number of forecasts and sun_up times")
   fc <- t(sapply(seq_along(sun_up), FUN=function(i) {if (isTRUE(as.vector(t(sun_up))[i])) (stats::quantile(nwp_rolling[i,], probs=percentiles, names=F, na.rm=T, type=1)) 
     else rep(0, times=length(percentiles))}, simplify="array"))
   colnames(fc) <- percentiles
