@@ -26,8 +26,8 @@ qwCRPS <-function(fc, tel, sun_up, weighting="none"){
 QS <- function(fc, tel, sun_up, percentiles) {
   if (dim(fc)[1] != length(tel)) stop("Forecast and telemetry must be at same time resolution")
   
-  indicator <- sapply(seq_len(dim(fc)[2]), FUN=function(i) {as.integer(tel <= fc[,i])}, simplify="array")
-  qs <- sapply(seq_len(dim(fc)[2]), FUN=function(q) mean(2*(indicator[,q]-percentiles[q])*(fc[,q]-tel), na.rm = TRUE))
+  indicator <- sapply(seq_len(ncol(fc)), FUN=function(i) {as.integer(tel <= fc[,i])}, simplify="array")
+  qs <- sapply(seq_len(ncol(fc)), FUN=function(q) mean(2*(indicator[sun_up,q]-percentiles[q])*(fc[sun_up,q]-tel[sun_up]), na.rm = TRUE))
   return(qs)
 }
 
