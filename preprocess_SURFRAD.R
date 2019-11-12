@@ -1,5 +1,5 @@
 # Author: Kate Doubleday
-# Last updated: 11/11/2019
+# Last updated: 11/12/2019
 # This script pre-processes SURFRAD files to make hourly averages that match the hourly average ECMWF forecasts. 
 # -----------------------------------------------------------------
 # Load dependencies
@@ -11,6 +11,7 @@ library(ncdf4)
 # Define constants
 
 input_directory <- here("SURFRAD_files", "Raw_daily")
+cs_directory <- here("CAMS_McClear_files")
 output_directory <- here("SURFRAD_files", "Yearlong")
 dir.create(output_directory, showWarnings = FALSE)
 
@@ -56,7 +57,7 @@ get_time_series_data <- function(fname, site, res) {
     
   # Average to hourly to match ECMWF forecasts
   if (res=="Hourly") {
-    GHI <- sapply(1:24, FUN=function(i) {round(mean(GHI[(60*(i-1)+1):(60*i)]))})
+    GHI <- sapply(1:24, FUN=function(i) {mean(GHI[(60*(i-1)+1):(60*i)])})
     sun_up <- sapply(1:24, FUN=function(i) {any(sun_up[(60*(i-1)+1):(60*i)])})
   }
   
@@ -76,6 +77,16 @@ export_site_netcdf <- function(site, year) {
     irr <- t(time_series_data[,1,])
     sun_up <- t(time_series_data[,2,])
     
+    if (year==2018) {
+      # Load in CAMS McClear clear-sky information
+      CS <- read.table(file.path(cs_directory, paste(site, ".csv", sep="")), sep=";", skip=38, 
+                       col.names = c("Observation_period", "TOA", "Clear_sky_GHI", "Clear_sky_BHI", "Clear_sky_DHI", "Clear_sky_BNI"))
+      CS_GHI <- CS[, "Clear_sky_GHI"]*60 # Convert from Wh/m^2 with 1 min integration period to W/m^2
+      if (res=="Hourly") {
+        CS_GHI <- matrix(sapply(1:(24*365), FUN=function(i) {mean(CS_GHI[(60*(i-1)+1):(60*i)])}), byrow = T, nrow = 365)
+      } else CS_GHI <- matrix(CS_GHI, byrow=T, nrow=365)
+    }
+      
     # Parameters for new NetCDF file
     if (year==2017) {d_vals <- 1:20} else {d_vals <- 1:365}
     if (res=="Hourly") {t_vals <- 1:24} else {t_vals <- 1:1440}
@@ -83,14 +94,16 @@ export_site_netcdf <- function(site, year) {
                    longname=c("Day number", "Hour of day"), SIMPLIFY = FALSE)
     ivar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
     svar <- ncvar_def("sun_up", "", dims, compression = 9, prec="integer")
+    csvar <- ncvar_def("clearsky_irradiance", "W/m^2", dims, missval=NA, compression = 9)
+    if (year==2018) {vars <- list(ivar, svar, csvar)} else {vars <- list(ivar, svar)}
     
     # Export new NetCDF file
-    nc_new <- nc_create(file.path(output_directory, res, paste(site, "_", year, ".nc", sep='')), list(ivar, svar))
+    nc_new <- nc_create(file.path(output_directory, res, paste(site, "_", year, ".nc", sep='')), vars)
     ncvar_put(nc_new, ivar, irr, count=ivar[['varsize']])
     ncvar_put(nc_new, svar, sun_up, count=svar[['varsize']])
+    if (year==2018) ncvar_put(nc_new, csvar, CS_GHI, count=svar[['varsize']])
     nc_close(nc_new)  
   }
-  
 }
 
 # -----------------------------------------------------------------
