@@ -76,9 +76,13 @@ get_site_data <- function(site, metrics_df, reliability_df, interval_width_df) {
     } else if (method=="Ch-PeEn") {
       fc <- forecast_Ch_PeEn(tel, percentiles, sun_up)    
     } else if (method=="PeEn") {
-      fc <- forecast_PeEn(tel, percentiles, sun_up, num_peen, oos_tel)    
+      if (res == "Hourly") {
+        fc <- forecast_PeEn_hourly(GHI, percentiles, sun_up, num_peen, GHI_2017)      
+      } else fc <- forecast_PeEn_minute(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), num_peen)
     } else if (method=="ECMWF Gaussian"){
-      fc <- forecast_Gaussian(nwp, tel, percentiles, sun_up)
+      fc <- forecast_Gaussian_hourly(nwp, GHI, percentiles, sun_up)
+    } else if (method=="Smart persistence Gaussian") {
+      fc <- forecast_Gaussian_minute(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ncol(GHI)/24)
     } else stop(paste("Forecast method", method, "not recognized"))
   
     metrics_df[site, method, "CRPS"] <- qwCRPS(fc, as.vector(t(tel)), as.vector(t(sun_up)), weighting = "none")
