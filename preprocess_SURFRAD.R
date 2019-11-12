@@ -53,8 +53,8 @@ get_time_series_data <- function(fname, site, res) {
     matches <- all_data[, "min"]==min & all_data[, "hour"]==hr
     ifelse(any(matches), all_data[which(matches), "zen"], NA)
   }, hr=hr)}))
-  sun_up <- zen_min < 90
-    
+  sun_up <- zen_min <= 85
+  
   # Average to hourly to match ECMWF forecasts
   if (res=="Hourly") {
     GHI <- sapply(1:24, FUN=function(i) {mean(GHI[(60*(i-1)+1):(60*i)])})
