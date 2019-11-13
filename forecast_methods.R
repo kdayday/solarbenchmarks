@@ -1,11 +1,11 @@
 
 #' Climatology method using in-sample data
 #' 
-#' @param tel A [day x hour] matrix of the hourly average telemetry
+#' @param GHI A [day x hour] matrix of the hourly average telemetry
 #' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
 #' @param sun_up A [day x hour] matrix of logicals, indicating whether the sun is up
-forecast_climatology <- function(tel, percentiles, sun_up) {
-  xseq <- stats::quantile(as.vector(tel[sun_up]), probs=percentiles, names=F, na.rm=T, type=1)
+forecast_climatology <- function(GHI, percentiles, sun_up) {
+  xseq <- stats::quantile(as.vector(GHI[sun_up]), probs=percentiles, names=F, na.rm=T, type=1)
   fc <- t(sapply(as.vector(t(sun_up)), FUN=function(s) if (isTRUE(s)) xseq else rep(0, times=length(percentiles)), simplify="array"))
   colnames(fc) <- percentiles
   return(fc)
@@ -74,14 +74,21 @@ forecast_PeEn_minute <- function(GHI, percentiles, sun_up, clearsky_GHI, num_pee
 
 #' Complete-history persistence ensemble method
 #' 
-#' @param tel A [day x time] matrix of the telemetry
+#' @param GHI A [day x time] matrix of the telemetry
 #' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
 #' @param sun_up A [day x time] matrix of logicals, indicating whether the sun is up
-forecast_Ch_PeEn <- function(tel, percentiles, sun_up) {
-  n <- ncol(tel)
-  daily_fc <- sapply(1:n, FUN=function(i)stats::quantile(tel[sun_up[,i],i], probs=percentiles, names=F, na.rm=T, type=1))
-  fc <- t(sapply(seq_along(sun_up), FUN=function(i) {if (isTRUE(as.vector(t(sun_up))[i]))  daily_fc[,(i-1)%%n+1]
-    else rep(0, times=length(percentiles))}))
+#' @param clearsky_GHI a [day x time] matrix of clear-sky irradiance estimates
+forecast_Ch_PeEn <- function(GHI, percentiles, sun_up, clearsky_GHI) {
+  n <- ncol(GHI)
+  # Clear sky indices
+  CSI <- GHI/clearsky_GHI
+  fc <- sapply(seq_len(nrow(GHI)), FUN=function(day) {
+    sapply(seq_len(ncol(GHI)), FUN=function(hr) {if (isTRUE(sun_up[day, hr])) {
+      stats::quantile(CSI[sun_up[,hr],hr]*clearsky_GHI[day,hr] , probs=percentiles, names=F, na.rm=T, type=1)} else 
+      rep(0, times=length(percentiles))})
+  }, simplify="array")
+  fc <- array(aperm(fc, c(2,3,1)), dim=c(length(GHI), length(percentiles)))
+
   colnames(fc) <- percentiles
   return(fc)
 }
