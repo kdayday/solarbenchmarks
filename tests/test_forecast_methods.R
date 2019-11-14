@@ -64,22 +64,42 @@ test_that("forecast_PeEn_hourly calculation is correct", {
 })
 
 # Include test of edge cases with no training data yet or no non-NA training data
-test_that("forecast_PeEn_minute calculation is correct", {
-  sun_up <- c(T, F, F, T, T, T, F)
-  tel <- c(0, 0, 1, 9, 16, 10, 3)
-  clearsky_GHI <- c(10, 0, 0, 12, 20, 40, 30)
-  # CSI <- (NULL, NA, NA, 0.75, 0.8, 0.25, 0.1)
+test_that("forecast_PeEn_intrahour calculation is correct", {
+  sun_up <- c(T, T, T, T, T, T, F, F, F, T)
+  tel <- c(1, 2, 30, 400, 500, 600, 0, 0, 10, 10)
+  clearsky_GHI <- c(10, 10, 100, 1000, 1000, 10, 10, 10, 100, 100)
+  
   percentiles <- c(0.25, 0.5, 0.75)
   fc <- rbind(c(10, 10, 10), # Deterministic forecast: start of vector
+              c(10, 10, 10), # Deterministic forecast: start of vector
+              c(10, 10, 20),
+              c(100, 100, 200),
+              c(300, 300, 400),
+              c(3, 3, 4),
               c(0, 0, 0), # sundown
               c(0, 0, 0), # sundown
-              c(12, 12, 12), # Deterministic forecast: Start of day
-              c(15, 15, 15), # Deterministic forecast: only one error so far
-              c(30, 30, 32), # Distributional forecast: two errors available
-              c(0, 0, 0)) # sun down with non-zero cSI
+              c(0, 0, 0), # sundown
+              c(100, 100, 100)) # Deterministic forecast: start of vector 
   colnames(fc) <- percentiles
   rownames(fc) <- NULL
-  expect_equal(forecast_PeEn_minute(tel, percentiles, sun_up, num_peen=2, clearsky_GHI = clearsky_GHI), fc)
+  expect_equal(forecast_PeEn_intrahour(tel, percentiles, sun_up, clearsky_GHI = clearsky_GHI, ts_per_hour=2, nhours=1), fc)
+})
+
+test_that("forecast_PeEn_intrahour calculation is correct with multiple hours of training data", {
+  sun_up <- c(T, T, T, T, T, T)
+  tel <- c(1, 2, 30, 400, 500, 600)
+  clearsky_GHI <- c(10, 10, 100, 1000, 1000, 10)
+  
+  percentiles <- c(0.25, 0.5, 0.75)
+  fc <- rbind(c(10, 10, 10), # unchanged
+              c(10, 10, 10), # unchanged
+              c(10, 10, 20), # unchanged
+              c(100, 100, 200), # unchanged
+              c(100, 200, 300),
+              c(1, 2, 3)) 
+  colnames(fc) <- percentiles
+  rownames(fc) <- NULL
+  expect_equal(forecast_PeEn_intrahour(tel, percentiles, sun_up, clearsky_GHI = clearsky_GHI, ts_per_hour=2, nhours=2), fc)
 })
 
 test_that("forecast_Ch_PeEn calculation is correct", {

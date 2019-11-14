@@ -33,7 +33,8 @@ site_names <- c("Bondville",
 
 percentiles <- seq(0.01, 0.99, by=0.01)
 intervals <- seq(0.1, 0.9, by=0.1) # Central intervals for sharpness evaluation
-num_peen <- 20 # Number of members in the persistence ensemble
+num_peen <- 20 # Number of members in the hourly persistence ensemble
+intrahour_training_hours <- 2 # Number of hours of preceeding data to use for training intra-hour PeEn and intra-hour Gaussian methods
 resolution <- c("Hourly", "Intrahour")
 
 forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn", "ECMWF Ensemble", "ECMWF Gaussian"),
@@ -81,11 +82,11 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     } else if (method=="PeEn") {
       if (res == "Hourly") {
         fc <- forecast_PeEn_hourly(GHI, percentiles, sun_up, num_peen, GHI_2017)      
-      } else fc <- forecast_PeEn_minute(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), num_peen)
+      } else fc <- forecast_PeEn_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ts_per_hour=ncol(GHI)/24, nhours=intrahour_training_hours)
     } else if (method=="ECMWF Gaussian"){
       fc <- forecast_Gaussian_hourly(nwp, GHI, percentiles, sun_up, clearsky_GHI)
     } else if (method=="Smart persistence Gaussian") { 
-      fc <- forecast_Gaussian_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ncol(GHI)/24, nhours=2)
+      fc <- forecast_Gaussian_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ts_per_hour=ncol(GHI)/24, nhours=intrahour_training_hours)
     } else stop(paste("Forecast method", method, "not recognized"))
   
     metrics_df[site, method, "CRPS"] <- qwCRPS(fc, as.vector(t(GHI)), as.vector(t(sun_up)), weighting = "none")

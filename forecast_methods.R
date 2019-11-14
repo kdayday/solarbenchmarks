@@ -51,23 +51,31 @@ forecast_PeEn_hourly <- function(GHI, percentiles, sun_up, num_peen, lead_up_GHI
 }
 
 #' Persistence ensemble method: intra-hour
-#' While training data is being collected at the beginning of the day, forecast starts as deterministic clear-sky forecast and evolves as errors appear. 
+#' While training data is being collected at the beginning of the day, forecast starts as deterministic clear-sky forecast and gathers CSI's in 2nd hour. 
 #' 
 #' @param GHI A vector of telemetry
 #' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
 #' @param sun_up A vector of logicals, indicating whether the sun is up
 #' @param clearsky_GHI a vector of clear-sky irradiance estimates
-#' @param num_peen  Number of persistence ensemble members to take
-forecast_PeEn_minute <- function(GHI, percentiles, sun_up, clearsky_GHI, num_peen) {
+#' @param ts_per_hour Time-steps per hour, e.g., 12 for a 5-minute resolution forecast
+#' @param nhours Number of preceeding hours to collect training errors from
+forecast_PeEn_intrahour <- function(GHI, percentiles, sun_up, clearsky_GHI, ts_per_hour, nhours) {
   
-  fc <- t(sapply(seq_along(sun_up), FUN=function(i) {
-    if (isTRUE(sun_up[i])) {
-      CSI <- GHI[max(c(i-num_peen,0)):(i-1)]/clearsky_GHI[max(c(i-num_peen,0)):(i-1)] # Get ensemble of clear-sky indices
-      # If there is no training data available, either because at start of vector or start of day, assume clear sky. Ignore division by 0's. 
-      if (!any(is.finite(CSI))) CSI <- 1
-      return(stats::quantile(CSI[is.finite(CSI)]*clearsky_GHI[i], probs=percentiles, names=F, na.rm=T, type=1))
-    } else return(rep(0, times=length(percentiles)))}, simplify="array"))
+  # Forecast is updated hourly; find indices of start of each hour
+  update_times <-seq(from=1, to=length(GHI), by=ts_per_hour) 
   
+  fc <- sapply(update_times, FUN=function(i) {
+    # On an hourly basis, collect last hour's ensemble of CSI's
+    CSI_subset <- (GHI[max(i-nhours*ts_per_hour, 0):max(i-1, 0)]/clearsky_GHI[max(i-nhours*ts_per_hour, 0):max(i-1, 0)])[sun_up[max(i-nhours*ts_per_hour, 0):max(i-1, 0)]]
+    # If there is no training data available, either because at start of vector or start of day, assume clear sky. Ignore division by 0's. 
+    if (!any(is.finite(CSI_subset))) CSI_subset <- 1 # Force deterministic if no valid CSI's available yet
+    sapply(seq_len(ts_per_hour), FUN=function(j, CSI_subset) {
+      if (isTRUE(sun_up[i+j-1])){
+        return(stats::quantile(CSI_subset[is.finite(CSI_subset)]*clearsky_GHI[i+j-1], probs=percentiles, names=F, na.rm=T, type=1))
+      } else return(rep(0, times=length(percentiles)))}, CSI_subset=CSI_subset, simplify="array")
+  }, simplify="array")
+  fc <- array(aperm(fc, c(2,3,1)), dim=c(length(GHI), length(percentiles)))
+
   colnames(fc) <- percentiles
   return(fc)
 }
