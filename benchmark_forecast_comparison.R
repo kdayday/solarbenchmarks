@@ -1,5 +1,5 @@
 # Author: Kate Doubleday
-# Last updated: 10/10/2019
+# Last updated: 11/14/2019
 # -----------------------------------------------------------------
 # Load dependencies
 
@@ -34,10 +34,10 @@ site_names <- c("Bondville",
 percentiles <- seq(0.01, 0.99, by=0.01)
 intervals <- seq(0.1, 0.9, by=0.1) # Central intervals for sharpness evaluation
 num_peen <- 20 # Number of members in the persistence ensemble
-resolution <- c("Hourly", "Minute")
+resolution <- c("Hourly", "Intrahour")
 
 forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn", "ECMWF Ensemble", "ECMWF Gaussian"),
-                      Minute=c("Climatology", "Ch-PeEn", "PeEn", "Smart persistence Gaussian"))
+                      Intrahour=c("Climatology", "Ch-PeEn", "PeEn", "Smart persistence Gaussian"))
 
 metric_names <- c("CRPS", "Left-tail weighted CRPS", "Center weighted CRPS", "Right-tail weighted CRPS")
 
@@ -84,8 +84,8 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
       } else fc <- forecast_PeEn_minute(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), num_peen)
     } else if (method=="ECMWF Gaussian"){
       fc <- forecast_Gaussian_hourly(nwp, GHI, percentiles, sun_up, clearsky_GHI)
-    } else if (method=="Smart persistence Gaussian") {
-      fc <- forecast_Gaussian_minute(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ncol(GHI)/24)
+    } else if (method=="Smart persistence Gaussian") { 
+      fc <- forecast_Gaussian_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ncol(GHI)/24, nhours=2)
     } else stop(paste("Forecast method", method, "not recognized"))
   
     metrics_df[site, method, "CRPS"] <- qwCRPS(fc, as.vector(t(GHI)), as.vector(t(sun_up)), weighting = "none")

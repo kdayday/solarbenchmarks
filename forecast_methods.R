@@ -121,35 +121,38 @@ forecast_Gaussian_hourly <- function(nwp, GHI, percentiles, sun_up, clearsky_GHI
   return(fc)
 }
 
-#' Gaussian error dressing: intra-hour, using smart persistence errors from the past hour
+#' Gaussian error dressing: intra-hour, using smart persistence errors from past nhours hours
 #'
 #' @param GHI A vector of the telemetry
 #' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
 #' @param sun_up A vector of logicals, indicating whether the sun is up
 #' @param clearsky_GHI a vector of clear-sky irradiance estimates
-#' @param n Time steps per hour, e.g., 60 for a 1-minute resolution forecast
-forecast_Gaussian_minute <- function(GHI, percentiles, sun_up, clearsky_GHI, n) {
+#' @param ts_per_hour Time-steps per hour, e.g., 12 for a 5-minute resolution forecast
+#' @param nhours Number of preceeding hours to collect training errors from
+forecast_Gaussian_intrahour <- function(GHI, percentiles, sun_up, clearsky_GHI, ts_per_hour, nhours) {
   
-  fc <- t(sapply(seq_along(sun_up), FUN=function(i) {
-    if (isTRUE(sun_up[i])) {
-      # Forecast is undefined in first time points when no error data is available
-      if (i <= 2) {return(rep(NA, times=length(percentiles)))}
-      else {
-        
-        # Get clear-sky indices from previous n time-steps, ending 2 steps before forecast
-        CSI <- GHI[max(i-n-1, 0):max(i-2, 0)]/clearsky_GHI[max(i-n-1, 0):max(i-2, 0)] 
-        # Use clear-sky indices to calculate smart persistence for previous (up to) n time-steps, ending 1 step before forecast
-        smart_persistence <- clearsky_GHI[(i-length(CSI)):(i-1)]*CSI 
-        errors <- smart_persistence - GHI[(i-length(CSI)):(i-1)]
-        # Force deterministic forecast if errors are all NA/Inf in the training data (e.g., as the sun comes up)
-        if (!any(is.finite(CSI))) errors <- rep(0, times=n) 
-        
-        CSI_forecast <- GHI[i-1]/clearsky_GHI[i-1]
-        # Force deterministic smart persistence forecast when no training data is available
-        smart_persistence_now <- clearsky_GHI[i]*ifelse(is.finite(CSI_forecast), CSI_forecast, 1)
-        return(qtruncnorm(p=percentiles, a=0, mean=smart_persistence_now, sd=sd(errors[is.finite(errors)], na.rm=T)))  
-      }
-    } else return(rep(0, times=length(percentiles)))}, simplify="array"))
+  # First, calculate deterministic smart persistence on an hourly basis:
+  # Last measurement of the preceeding hour is persisted for the next hour
+  update_times <-seq(from=1, to=length(GHI), by=ts_per_hour) 
+  hourly_CSI <- c(1, GHI[(update_times-1)]/clearsky_GHI[(update_times-1)]) # assume first value is clear sky
+  # If no CSI is available (i.e., night-time), assume clear sky:
+  hourly_CSI[!is.finite(hourly_CSI)] <- 1
+  # Persist CSI on an hourly basis over 5-minute clear-sky estimates
+  hourly_smart_persistence <- as.vector(sapply(seq_along(update_times), FUN=function(i) {hourly_CSI[i]*clearsky_GHI[update_times[i]:(update_times[i] + ts_per_hour-1)]}))
+  # Calculate smart persistence errors
+  errors <- hourly_smart_persistence - GHI
+  
+  fc <- sapply(update_times, FUN=function(i) {
+    # On an hourly basis, collect last hour's errors and calculate a new standard deviation for the next hour
+    error_subset <- errors[max(i-nhours*ts_per_hour, 0):max(i-1, 0)][sun_up[max(i-nhours*ts_per_hour, 0):max(i-1, 0)]]
+    if (!any(is.finite(error_subset))) error_subset <- rep(0, times=nhours*ts_per_hour) # Force deterministic if no errors have accumulated yet
+    std_dev <- sd(error_subset, na.rm=T)
+    sapply(seq_len(ts_per_hour), FUN=function(j, std_dev) {
+      if (isTRUE(sun_up[i+j-1])){
+      return(qtruncnorm(p=percentiles, a=0, b=clearsky_GHI[i+j-1], mean=hourly_smart_persistence[i+j-1], sd=std_dev))
+    } else return(rep(0, times=length(percentiles)))}, std_dev=std_dev, simplify="array")
+  }, simplify="array")
+  fc <- array(aperm(fc, c(2,3,1)), dim=c(length(GHI), length(percentiles)))
   
   colnames(fc) <- percentiles
   return(fc)

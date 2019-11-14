@@ -137,29 +137,54 @@ test_that("forecast_Gaussian_hourly calculation is correct", {
 })
 
 # Include test of edge cases with no training data yet or no non-NA training data
-test_that("forecast_Gaussian_minute calculation is correct", {
+test_that("forecast_Gaussian_intrahour calculation is correct", {
   sun_up <- c(T, T, T, T, F, F, F, T, T, T)
-  GHI <- c(7, 8, 10, 16, 0, 0, 10, 9, 8, 16)
+  GHI <- c(7, 8, 10, 18, 0, 0, 10, 9, 8, 16)
   clearsky_GHI <- c(10, 10, 10, 20, 0, 0, 0, 12, 16, 20)
-  # csi (0.7, 0.8, 1, 0.8, NA, NA, Inf, 0.75, 0.5, 0.8)
-  # smart persistence (NA, 7, 8, 20, NA, NA, NA, 12, 12, 10)
-  # errors (NA, -1, -2, 4, NA, NA, NA, Inf, -4, -10) 
-  # sum of errors (NA, NA, -1, -3, NA, NA, NA, NA, 4)
+  # Hourly smart persistence
+  # CSI (1, 0.8, 0.9, 1 (from NA), 0.75)
+  # smart persistence (10, 10, 8, 16, 0, 0, 0, 12, 12, 15)
+  # errors (3, 2, -2, -2, 0, 0, 0 (sundown), 3, 4, -1) 
+  # sum of errors (0 (from NA), 5, -4, 0 (sun-down), 3)
   percentiles <- c(0.25, 0.5, 0.75)
-  fc <- rbind(rep(NA, times=3),
-              rep(NA, times=3),
-              rep(7, times=3),
-              rep(17, times=3),
+  fc <- rbind(rep(10, times=3),
+              rep(10, times=3),
+              rep(13, times=3),
+              rep(21, times=3),
               rep(0, times=3),
               rep(0, times=3),
               rep(0, times=3),
               rep(12, times=3),
-              rep(12, times=3),
-              rep(14, times=3))
+              rep(15, times=3),
+              rep(18, times=3))
   
   colnames(fc) <- percentiles
   rownames(fc) <- NULL
   with_mock(sd=function(...) return(sum(...)),
-            qtruncnorm=function(p, a, mean, sd) return(rep(mean+sd, times=length(p))),
-            expect_equal(forecast_Gaussian_minute(GHI, percentiles, sun_up, clearsky_GHI, n=2), fc))
+            qtruncnorm=function(p, a, b, mean, sd) return(rep(mean+sd, times=length(p))),
+            expect_equal(forecast_Gaussian_intrahour(GHI, percentiles, sun_up, clearsky_GHI, ts_per_hour =2, nhours=1), fc))
+})
+
+test_that("forecast_Gaussian_intrahour calculation is correct with multiple hours of errors", {
+  sun_up <- c(T, T, T, T,  T, T)
+  GHI <- c(7, 8, 10, 15, 8, 16)
+  clearsky_GHI <- c(10, 10, 10, 20, 16, 20)
+  # Hourly smart persistence
+  # CSI (1, 0.8, 0.75)
+  # smart persistence (10, 10, 8, 16, 12, 15)
+  # errors (3, 2, -2, 1, 4, -1) 
+  # sum of errors (0 (from NA), 5, 4) <- 4 is cumulative of first [1:4] errors
+  percentiles <- c(0.25, 0.5, 0.75)
+  fc <- rbind(rep(10, times=3), # unchanged
+              rep(10, times=3), # unchanged
+              rep(13, times=3), # unchanged
+              rep(21, times=3), # unchanged
+              rep(16, times=3),
+              rep(19, times=3))
+  
+  colnames(fc) <- percentiles
+  rownames(fc) <- NULL
+  with_mock(sd=function(...) return(sum(...)),
+            qtruncnorm=function(p, a, b, mean, sd) return(rep(mean+sd, times=length(p))),
+            expect_equal(forecast_Gaussian_intrahour(GHI, percentiles, sun_up, clearsky_GHI, ts_per_hour =2, nhours=2), fc))
 })
