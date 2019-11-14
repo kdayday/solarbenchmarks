@@ -1,6 +1,6 @@
 # Author: Kate Doubleday
-# Last updated: 11/12/2019
-# This script pre-processes SURFRAD files to make hourly averages that match the hourly average ECMWF forecasts. 
+# Last updated: 11/14/2019
+# This script pre-processes SURFRAD files to make intra-hourly averages for intra-hour forecasting and hourly averages that match the hourly average ECMWF forecasts. 
 # -----------------------------------------------------------------
 # Load dependencies
 
@@ -15,7 +15,9 @@ cs_directory <- here("CAMS_McClear_files")
 output_directory <- here("SURFRAD_files", "Yearlong")
 dir.create(output_directory, showWarnings = FALSE)
 
-resolution <- c("Hourly", "Minute")
+resolution <- c("Hourly", "Intrahour")
+duration <- list(Hourly=60, Intrahour=5) # How many minutes to average for each forecast
+
 for (r in resolution) {dir.create(file.path(output_directory, r), showWarnings = FALSE)}
 
 site_names <- c("Bondville_IL",
@@ -30,7 +32,7 @@ site_names <- c("Bondville_IL",
 #' A helper function to import each daily SURFRAD file and average hourly, if needed
 #' @param fname Input file name
 #' @param site Site name
-#' @param res "Hourly" or "Minute" for averaging
+#' @param res "Hourly" or "Intrahour" for averaging
 #' @return an array of forecasts
 get_time_series_data <- function(fname, site, res) {
   all_data <- read.table(file.path(input_directory, site, year, fname), skip=2, col.names=c(
@@ -56,10 +58,9 @@ get_time_series_data <- function(fname, site, res) {
   sun_up <- zen_min <= 85
   
   # Average to hourly to match ECMWF forecasts
-  if (res=="Hourly") {
-    GHI <- sapply(1:24, FUN=function(i) {mean(GHI[(60*(i-1)+1):(60*i)])})
-    sun_up <- sapply(1:24, FUN=function(i) {any(sun_up[(60*(i-1)+1):(60*i)])})
-  }
+  nsteps <- length(GHI)/duration[[res]]
+  GHI <- sapply(1:nsteps, FUN=function(i) {mean(GHI[(duration[[res]]*(i-1)+1):(duration[[res]]*i)])})
+  sun_up <- sapply(1:nsteps, FUN=function(i) {any(sun_up[(duration[[res]]*(i-1)+1):(duration[[res]]*i)])})
   
   return(matrix(c(GHI, sun_up), ncol=2))  
 }
@@ -82,14 +83,13 @@ export_site_netcdf <- function(site, year) {
       CS <- read.table(file.path(cs_directory, paste(site, ".csv", sep="")), sep=";", skip=38, 
                        col.names = c("Observation_period", "TOA", "Clear_sky_GHI", "Clear_sky_BHI", "Clear_sky_DHI", "Clear_sky_BNI"))
       CS_GHI <- CS[, "Clear_sky_GHI"]*60 # Convert from Wh/m^2 with 1 min integration period to W/m^2
-      if (res=="Hourly") {
-        CS_GHI <- matrix(sapply(1:(24*365), FUN=function(i) {mean(CS_GHI[(60*(i-1)+1):(60*i)])}), byrow = T, nrow = 365)
-      } else CS_GHI <- matrix(CS_GHI, byrow=T, nrow=365)
+      # Average over window for this forecast's resolution
+      CS_GHI <- matrix(sapply(1:(1440/duration[[res]]*365), FUN=function(i) {mean(CS_GHI[(duration[[res]]*(i-1)+1):(duration[[res]]*i)])}), byrow = T, nrow = 365)
     }
       
     # Parameters for new NetCDF file
     if (year==2017) {d_vals <- 1:20} else {d_vals <- 1:365}
-    if (res=="Hourly") {t_vals <- 1:24} else {t_vals <- 1:1440}
+    t_vals <- 1:(1440/duration[[res]])
     dims <- mapply(ncdim_def, name=c('Day', 'Hour'), units=c('', ''), vals=list(d_vals, t_vals), 
                    longname=c("Day number", "Hour of day"), SIMPLIFY = FALSE)
     ivar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
