@@ -105,18 +105,19 @@ test_that("forecast_Ch_PeEn calculation is correct", {
 
 test_that("forecast_Gaussian_hourly throws errors", {
   nwp <- array(1:24, dim=c(2, 3, 2, 2))
-  expect_error(forecast_Gaussian_hourly(nwp=nwp, GHI=NA, percentiles=NA, sun_up=NA), "Unknown handling*")
+  expect_error(forecast_Gaussian_hourly(nwp=nwp, GHI=NA, percentiles=NA, sun_up=NA, clearsky_GHI = NA), "Unknown handling*")
   nwp <- array(1:24, dim=c(2, 2, 2, 3))
-  expect_error(forecast_Gaussian_hourly(nwp=nwp, GHI=NA, percentiles=NA, sun_up=NA), "Unknown handling*")
+  expect_error(forecast_Gaussian_hourly(nwp=nwp, GHI=NA, percentiles=NA, sun_up=NA, clearsky_GHI = NA), "Unknown handling*")
   nwp <- array(1:48, dim=c(2, 2, 4, 3))
   sun_up <- matrix(c(T,T,T,F), ncol=2)
   tel <- matrix(1:6, ncol=3)
-  expect_error(forecast_Gaussian_hourly(nwp=nwp, GHI=tel, percentiles=NA, sun_up=sun_up), "Given incompatible*")
+  expect_error(forecast_Gaussian_hourly(nwp=nwp, GHI=tel, percentiles=NA, sun_up=sun_up, clearsky_GHI = NA), "Given incompatible*")
 })
 
 test_that("forecast_Gaussian_hourly calculation is correct", {
   nwp <- array(1:48, dim=c(2, 2, 4, 3))
   tel <- matrix(rep(2, 8), ncol=4, byrow = T)
+  clearsky_GHI <- matrix(rep(NA, times=8), ncol=4)
   percentiles <- c(0.25, 0.5, 0.75)
   sun_up <- matrix(c(rep(T, times=7), F), ncol=4)
   # residuals (-1 + 0), (3 + 4), (1 + 2), (5 + 6) = -1, 7, 3, 11
@@ -131,8 +132,8 @@ test_that("forecast_Gaussian_hourly calculation is correct", {
   colnames(fc) <- percentiles
   rownames(fc) <- NULL
   with_mock(sd=function(...) return(sum(...)), 
-            qtruncnorm=function(p, a, mean, sd) return(rep(mean+sd, times=length(p))),
-            expect_equal(forecast_Gaussian_hourly(nwp, tel, percentiles, sun_up), fc))
+            qtruncnorm=function(p, a, b, mean, sd) return(rep(mean+sd, times=length(p))),
+            expect_equal(forecast_Gaussian_hourly(nwp, tel, percentiles, sun_up, clearsky_GHI), fc))
 })
 
 # Include test of edge cases with no training data yet or no non-NA training data

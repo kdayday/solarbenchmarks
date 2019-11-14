@@ -94,12 +94,14 @@ forecast_Ch_PeEn <- function(GHI, percentiles, sun_up, clearsky_GHI) {
 }
 
 #' Gaussian error dressing: hourly, using hourly errors of the deterministic NWP forecast to fit truncated normal distributions
+#' Distribution is truncated at 0 on the low end and clear-sky GHI on the upper end
 #' 
 #' @param nwp A [day x issue time x lead time x member] matrix of NWP ensemble forecasts; First member is treated as the control member.
 #' @param GHI A [day x time] matrix of the telemetry
 #' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
 #' @param sun_up A [day x time] matrix of logicals, indicating whether the sun is up
-forecast_Gaussian_hourly <- function(nwp, GHI, percentiles, sun_up) {
+#' @param clearsky_GHI a [day x time] matrix of clear-sky irradiance estimates
+forecast_Gaussian_hourly <- function(nwp, GHI, percentiles, sun_up, clearsky_GHI) {
   if ((dim(nwp)[3]/dim(nwp)[2])%%1!=0 | (dim(nwp)[3]/dim(nwp)[2])==1) stop("Unknown handling for given number of issue and lead times")
   if (any(dim(GHI)!=dim(sun_up))) stop("Given incompatible number of forecasts and sun_up times")
   
@@ -108,7 +110,12 @@ forecast_Gaussian_hourly <- function(nwp, GHI, percentiles, sun_up) {
   # Fit a standard deviation for each hour of the day, based on all residuals from that hour
   daily_sd <- sapply(1:n, FUN=function(i) sd(nwp_ctrl[,i] - GHI[,i], na.rm=T))
 
-  fc <- t(sapply(seq_along(sun_up), FUN=function(i) {if (isTRUE(as.vector(t(sun_up))[i])) qtruncnorm(p=percentiles, a=0, mean=as.vector(t(nwp_ctrl))[i], sd=daily_sd[(i-1)%%n+1])
+  # Transform from matrices to vectors for simplicity of for loop
+  sun_up_vector <- as.vector(t(sun_up))
+  ctrl_vector <- as.vector(t(nwp_ctrl))
+  clearsky_vector <- as.vector(t(clearsky_GHI))
+  
+  fc <- t(sapply(seq_along(sun_up_vector), FUN=function(i) {if (isTRUE(sun_up_vector[i])) qtruncnorm(p=percentiles, a=0, b=clearsky_vector[i], mean=ctrl_vector[i], sd=daily_sd[(i-1)%%n+1])
     else rep(0, times=length(percentiles))}))
   colnames(fc) <- percentiles
   return(fc)

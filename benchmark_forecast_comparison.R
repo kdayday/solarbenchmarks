@@ -83,7 +83,7 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
         fc <- forecast_PeEn_hourly(GHI, percentiles, sun_up, num_peen, GHI_2017)      
       } else fc <- forecast_PeEn_minute(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), num_peen)
     } else if (method=="ECMWF Gaussian"){
-      fc <- forecast_Gaussian_hourly(nwp, GHI, percentiles, sun_up)
+      fc <- forecast_Gaussian_hourly(nwp, GHI, percentiles, sun_up, clearsky_GHI)
     } else if (method=="Smart persistence Gaussian") {
       fc <- forecast_Gaussian_minute(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ncol(GHI)/24)
     } else stop(paste("Forecast method", method, "not recognized"))
