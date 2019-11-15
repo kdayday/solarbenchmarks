@@ -22,6 +22,8 @@ telemetry_directory <- here("SURFRAD_files", "Yearlong")
 forecast_directory <- here("NetCDF_files", "SURFRAD_sites")
 output_directory <- here("Results")
 dir.create(output_directory, showWarnings = FALSE)
+pit_directory <- here("Results", "PIT_histograms")
+dir.create(pit_directory, showWarnings = FALSE)
 
 site_names <- c("Bondville",
                 "Boulder",
@@ -35,6 +37,7 @@ percentiles <- seq(0.01, 0.99, by=0.01)
 intervals <- seq(0.1, 0.9, by=0.1) # Central intervals for sharpness evaluation
 num_peen <- 20 # Number of members in the hourly persistence ensemble
 intrahour_training_hours <- 2 # Number of hours of preceeding data to use for training intra-hour PeEn and intra-hour Gaussian methods
+histogram_bins <- 20 # Number of bins to use in PIT histogram
 resolution <- c("Hourly", "Intrahour")
 
 forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn", "ECMWF Ensemble", "ECMWF Gaussian"),
@@ -99,6 +102,9 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     
     reliability_df[site, method,] <- reliability(fc, as.vector(t(GHI)), as.vector(t(sun_up)))
     interval_width_df[site, method,] <- interval_width(fc, as.vector(t(sun_up)), intervals = intervals)$widths
+    
+    # Plot PIT histogram
+    plot_PIT_histogram(fc, as.vector(t(GHI)), as.vector(t(sun_up)), histogram_bins, site, res, method, pit_directory, R_graph_export)
     
     # Export sample forecasts
     g <- plot_fanplot(fc, as.vector(t(tel)), c(1, 72))

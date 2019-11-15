@@ -72,6 +72,43 @@ reliability <- function(fc, tel, sun_up) {
   return(obs_proportion)
 }
 
+#' Plot probability integral transform histogram for a single single and forecast method
+#' @param fc A [valid time x quantile] matrix of probabilistic quantile forecasts, with column names giving the [0,1] percentiles of the forecast
+#' @param tel A vector of the telemetry values
+#' @param sun_up Logical vector of whether sun is up across the forecast times
+#' @param nbins The number of histogram bins to use. Must be a factor of length(percentiles)+1 to make use of available fc format.
+#' @param site Site name, for naming output file
+#' @param res Temporal resolution, for naming output file
+#' @param method Forecast method name, for naming output file
+#' @param output_directory Directory to save graphs
+#' @param R_graph_export Boolean, whether to save a .R object of the plot as well
+plot_PIT_histogram  <- function(fc, tel, sun_up, nbins, site, res, method, output_directory, R_graph_export) {
+  if ((ncol(fc)+1)%%nbins != 0 ) stop("nbins must be a factor of length(percentiles)+1 to make use of available fc format.")
+
+  percentiles <- as.numeric(colnames(fc))
+  breaks_indices <- 1:(nbins)*(length(percentiles)+1)/nbins
+  
+  valid <- is.finite(tel) & sun_up # Only assess metrics over times when sun is up and data is not missing
+  bin_hits <- sapply(seq_along(breaks_indices), FUN = function(i) {
+    if (i==1) {low_limit <- rep(-Inf, times=nrow(fc))} else {low_limit <- fc[,breaks_indices[i-1]]}
+    if (i==length(breaks_indices)) {upper_limit <- rep(Inf, times=nrow(fc))} else {upper_limit <- fc[,breaks_indices[i]]}
+    sum(tel[valid] > low_limit[valid] & tel[valid] <= upper_limit[valid], na.rm=T)
+  })
+  
+  bin_width <- diff(percentiles[breaks_indices[1:2]])
+  bin_means <- c(percentiles[breaks_indices[-nbins]],1) - bin_width/2
+  
+  g <- ggplot2::ggplot(data.frame(x=bin_means, y=bin_hits/sum(bin_hits)), ggplot2::aes(x=x, y=y)) +
+    ggplot2::geom_col(width=bin_width) +
+    ggplot2::geom_line(data.frame(x=c(0, 1), y=c(1/nbins, 1/nbins)), mapping=ggplot2::aes(x=x, y=y), linetype="dashed") +
+    ggplot2::xlab("Probability Integral Transform") +
+    ggplot2::ylab("Relative Frequency")
+  ggsave(file.path(output_directory, paste(site, res, method, "PIT_histogram.pdf", sep="_")), height=4, width=6)
+  if (R_graph_export) {
+    save(g, file=file.path(output_directory, paste(site, res, method, "PIT_histogram.R", sep="_")))
+  }
+}
+
 #' Plot a fan plot comparing the forecast quantiles to the telemetry
 #'
 #' @param fc A [valid time x quantile] matrix of probabilistic quantile forecasts, with column names giving the [0,1] percentiles of the forecast
