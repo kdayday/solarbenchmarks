@@ -113,47 +113,24 @@ for (res in resolution) {
   reliability_df <- array(dim=c(length(site_names), length(forecast_names[[res]]), length(percentiles)), dimnames=list(site_names, forecast_names[[res]], percentiles))
   interval_width_df <- array(dim=c(length(site_names), length(forecast_names[[res]]), length(intervals)), dimnames=list(site_names, forecast_names[[res]], intervals))
   
+  # Repeat the analysis for each of the 7 SURFRAD sites
   
   for (site in site_names) {
+    # Conduct the forecast validation for this site, saving the results for each method to the three data frames
     results <- get_site_data(res, site, metrics_df, reliability_df, interval_width_df)
     metrics_df <- results$metrics_df
     reliability_df <- results$reliability_df
     interval_width_df <- results$interval_width_df
   
-    # Export graphs
+    # Export reliability and interval width graphs comparing the methods for each site
     # ------------------------------------------------------------------
-    shapes <- c(17, 0, 16, 5, 4)
-    
-    # Reliability plot
-    df <- melt(reliability_df[site,,], varnames=c("Method", "levels"))
-    
-    g <- ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
-      xlab("Nominal proportion") + ylab("Observed proportion") + 
-      scale_shape_manual(values = shapes[1:nrow(reliability_df)]) + 
-      geom_line(data = data.frame(x=c(0,1), y=c(0,1)), mapping=aes(x=x,y=y), col="black") + 
-      theme(legend.justification=c(1,0), legend.position=c(0.98,0.02), text = ggplot2::element_text(size=14))
-    ggsave(file.path(output_directory, paste(site, res, "reliability.pdf", sep="_")), height=4, width=8)
-    if (Rexport) {
-      save(g, file=file.path(output_directory, paste(site, res, "reliability_plot.R", sep="_")))
-    }
-    
-    # Sharpness plot
-    df <- melt(interval_width_df[site,,], varnames=c("Method", "levels"))
-    
-    g <- ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
-      xlab("Central Interval (%)") + ylab(expression(paste("Average Width (W/m"^"2", ")"))) + 
-      scale_shape_manual(values = shapes[1:nrow(interval_width_df)]) + 
-      theme(legend.justification=c(0,1), legend.position=c(0.02,0.98), text = ggplot2::element_text(size=14)) + 
-      scale_x_continuous(breaks=intervals, labels=intervals*100)
-    ggsave(file.path(output_directory, paste(site, res, "interval_width.pdf", sep="_")), height=4, width=8)
-    if (Rexport) {
-      save(g, file=file.path(output_directory, paste(site, res, "interval_width_plot.R", sep="_")))  
-    }
+    shapes <- c(17, 0, 16, 5, 4) # Select point shapes for graphs
+    plot_reliability(reliability_df, site, res, shapes, output_directory, R_graph_export)
+    plot_interval_width(interval_width_df, site, res, shapes, output_directory, R_graph_export)
   }
 
   # -----------------------------------------------------------------
-  # Export metrics table
-  
+  # Export CRPS metrics table, comparing the methods across the sites
   sink(file.path(output_directory, paste('CRPS', res, 'results.csv', sep="_")))
   for (metric in dimnames(metrics_df)[[3]]) {
     cat(paste(metric, "\n"))

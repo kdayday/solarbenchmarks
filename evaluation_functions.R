@@ -83,6 +83,47 @@ plot_fanplot <- function(fc, tel, window) {
   df <- gather(df, key="q", value="y", -x, convert=T)
   g <- ggplot(df,  aes(x=x,y=y,quantile=q)) + geom_fan() +
     geom_line(mapping=aes(x=x, y=y), data=data.frame(x=seq_len(diff(window)+1), y=tel[window[1]:window[2]]), col="chocolate3", inherit.aes = F) +
-    theme_bw() + xlab("UTC Time (hours)") + ylab(expression(paste("Irradiance (W/m"^"2", ")")))  +
+    theme_bw() + xlab("Time (hours)") + ylab(expression(paste("Irradiance (W/m"^"2", ")")))  +
     scale_x_continuous(breaks=seq(0, diff(window)+1, by=6))
+}
+
+# Plot reliability of 1..99 quantiles, comparing among forecast methods for a single site
+#' @param reliability Data frame of the quantile reliability results for each method
+#' @param site Site name, for naming output file
+#' @param res Temporal resolution, for naming output file
+#' @param output_directory Directory to save graphs
+#' @param R_graph_export Boolean, whether to save a .R object of the plot as well
+plot_reliability <- function(reliability_df, site, res, shapes, output_directory, R_graph_export) {
+  df <- melt(reliability_df[site,,], varnames=c("Method", "levels"))
+  
+  g <- ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
+    xlab("Nominal proportion") + ylab("Observed proportion") + 
+    scale_shape_manual(values = shapes[1:nrow(reliability_df)]) + 
+    geom_line(data = data.frame(x=c(0,1), y=c(0,1)), mapping=aes(x=x,y=y), col="black") + 
+    theme(legend.justification=c(1,0), legend.position=c(0.98,0.02), text = ggplot2::element_text(size=14))
+  ggsave(file.path(output_directory, paste(site, res, "reliability.pdf", sep="_")), height=4, width=8)
+  if (R_graph_export) {
+    save(g, file=file.path(output_directory, paste(site, res, "reliability_plot.R", sep="_")))
+  }
+}
+
+# Plot average interval width of 10%, ..., 90% central intervals, comparing among forecast methods for a single site
+#' @param interval_width_df Data frame of the interval width results for each method
+#' @param site Site name, for naming output file
+#' @param res Temporal resolution, for naming output file
+#' @param output_directory Directory to save graphs
+#' @param R_graph_export Boolean, whether to save a .R object of the plot as well
+plot_interval_width <- function(interval_width_df, site, res, shapes, output_directory, R_graph_export) {
+  
+  df <- melt(interval_width_df[site,,], varnames=c("Method", "levels"))
+  
+  g <- ggplot(df, aes(levels,value)) + geom_point(aes(colour = Method, shape=Method)) + geom_line(aes(colour = Method)) + 
+    xlab("Central Interval (%)") + ylab(expression(paste("Average Width (W/m"^"2", ")"))) + 
+    scale_shape_manual(values = shapes[1:nrow(interval_width_df)]) + 
+    theme(legend.justification=c(0,1), legend.position=c(0.02,0.98), text = ggplot2::element_text(size=14)) + 
+    scale_x_continuous(breaks=intervals, labels=intervals*100)
+  ggsave(file.path(output_directory, paste(site, res, "interval_width.pdf", sep="_")), height=4, width=8)
+  if (R_graph_export) {
+    save(g, file=file.path(output_directory, paste(site, res, "interval_width_plot.R", sep="_")))  
+  }
 }
