@@ -65,8 +65,7 @@ interval_width <- function(fc, sun_up, intervals=seq(0.1, 0.9, by=0.1)) {
 #' @param fc A [valid time x quantile] matrix of probabilistic quantile forecasts, with column names giving the [0,1] percentiles of the forecast
 #' @param tel A vector of the telemetry values
 #' @param sun_up Logical vector of whether sun is up across the forecast times
-#' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
-reliability <- function(fc, tel, sun_up, percentiles) {
+reliability <- function(fc, tel, sun_up) {
   percentiles <- as.numeric(colnames(fc))
   counts <- sapply(seq_along(percentiles), FUN= function(i) {sum(tel[sun_up] <= fc[sun_up,i], na.rm=T)})
   obs_proportion <- counts/sum(sun_up, na.rm=T)

@@ -43,8 +43,10 @@ forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn", "ECMWF Ensembl
 metric_names <- c("CRPS", "Left-tail weighted CRPS", "Center weighted CRPS", "Right-tail weighted CRPS")
 
 # -----------------------------------------------------------------
-# Add option to export .R graph objects
-Rexport <- F
+# Data export options
+
+# Option to export .R graph objects
+R_graph_export <- T
 
 # -----------------------------------------------------------------
 get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_df) {
@@ -95,7 +97,7 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     metrics_df[site, method, "Center weighted CRPS"] <- qwCRPS(fc, as.vector(t(GHI)), as.vector(t(sun_up)), weighting = "center")
     metrics_df[site, method, "Right-tail weighted CRPS"] <- qwCRPS(fc, as.vector(t(GHI)), as.vector(t(sun_up)), weighting = "right")
     
-    reliability_df[site, method,] <- reliability(fc, as.vector(t(GHI)), as.vector(t(sun_up)), percentiles)
+    reliability_df[site, method,] <- reliability(fc, as.vector(t(GHI)), as.vector(t(sun_up)))
     interval_width_df[site, method,] <- interval_width(fc, as.vector(t(sun_up)), intervals = intervals)$widths
     
     # Export sample forecasts
