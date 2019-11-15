@@ -33,8 +33,8 @@ input_directory <- here("NetCDF_files", "Raw")
 output_directory <- here("NetCDF_files", "SURFRAD_sites")
 dir.create(output_directory, showWarnings = FALSE)
 
-day_indx <- 1:31
 month_days <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+day_indx <-  1:365 
 
 # Parameters for new NetCDF file
 dims <- mapply(ncdim_def, name=c('Day', 'IssueTime', "LeadTime", 'Member'), units=c('', 'Hour', "Hours", ""), 
