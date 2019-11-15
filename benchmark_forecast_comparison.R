@@ -47,14 +47,16 @@ metric_names <- c("CRPS", "Left-tail weighted CRPS", "Center weighted CRPS", "Ri
 
 # -----------------------------------------------------------------
 # Data export options
+# Option to export a .csv of the forecast quantiles
+csv_export <- T
 
 # Option to export .R graph objects
 R_graph_export <- T
 
 # -----------------------------------------------------------------
 get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_df) {
-  # Load GHI ECMWF forecasts
   
+  # Load GHI ECMWF forecasts
   nc <- nc_open(file.path(forecast_directory, list.files(file.path(forecast_directory), pattern=site)))
   nwp <- ncvar_get(nc, varid="irradiance")
   nc_close(nc)
@@ -103,6 +105,11 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     reliability_df[site, method,] <- reliability(fc, as.vector(t(GHI)), as.vector(t(sun_up)))
     interval_width_df[site, method,] <- interval_width(fc, as.vector(t(sun_up)), intervals = intervals)$widths
     
+    # If desired, export this forecast matrix of quantiles to a .csv file for future use.
+    if (csv_export) {
+      write.table(fc, file=file.path(output_directory, paste(site, res, method, "quantiles.csv", sep=" ")), sep=",", row.names=F)
+    }
+    
     # Plot PIT histogram
     plot_PIT_histogram(fc, as.vector(t(GHI)), as.vector(t(sun_up)), histogram_bins, site, res, method, pit_directory, R_graph_export)
     
@@ -115,6 +122,7 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
   return(list(metrics_df=metrics_df, reliability_df=reliability_df, interval_width_df=interval_width_df))
 }
 
+# Repeat the analysis for each temporal resolution: Hourly forecast or intra-hourly forecast
 for (res in resolution) {
   # Prepare results data frames
   metrics_df <- array(dim=c(length(site_names), length(forecast_names[[res]]), length(metric_names)), dimnames=list(site_names, forecast_names[[res]], metric_names))
@@ -122,7 +130,6 @@ for (res in resolution) {
   interval_width_df <- array(dim=c(length(site_names), length(forecast_names[[res]]), length(intervals)), dimnames=list(site_names, forecast_names[[res]], intervals))
   
   # Repeat the analysis for each of the 7 SURFRAD sites
-  
   for (site in site_names) {
     # Conduct the forecast validation for this site, saving the results for each method to the three data frames
     results <- get_site_data(res, site, metrics_df, reliability_df, interval_width_df)
