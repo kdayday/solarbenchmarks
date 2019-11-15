@@ -78,7 +78,7 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     } else if (method=="ECMWF Ensemble") {
       fc <- forecast_NWP(nwp, percentiles, sun_up)    
     } else if (method=="Ch-PeEn") {
-      fc <- forecast_Ch_PeEn(GHI, percentiles, sun_up, clearsky_GHI)    
+      fc <- forecast_Ch_PeEn(GHI, percentiles, sun_up, clearsky_GHI, ncol(GHI)/24)    
     } else if (method=="PeEn") {
       if (res == "Hourly") {
         fc <- forecast_PeEn_hourly(GHI, percentiles, sun_up, num_peen, GHI_2017)      

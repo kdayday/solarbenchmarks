@@ -120,7 +120,27 @@ test_that("forecast_Ch_PeEn calculation is correct", {
               rep(0, times=3))
   colnames(fc) <- percentiles
   rownames(fc) <- NULL
-  expect_equal(forecast_Ch_PeEn(tel, percentiles, cbind(rep(T, 5), c( T, T, T, T, F)), clearsky_GHI), fc)
+  expect_equal(forecast_Ch_PeEn(tel, percentiles, cbind(rep(T, 5), c( T, T, T, T, F)), clearsky_GHI, ts_per_hour=1), fc)
+})
+
+test_that("forecast_Ch_PeEn calculation is correct with multiple time points per hour", {
+  tel <- matrix(c(1, 20, 300, 4, 50, 60, 7, 8, 900, 16), ncol=2)
+  clearsky_GHI <- matrix(c(10, 100, 1000, 10, 100, 100, 10, 10, 1000, 10), ncol=2)
+  percentiles <- c(0.25, 0.5, 0.75)
+  fc1 <- c(0.3, 0.5, 0.7) # Last point is excluded because sun down
+  fc <- rbind(fc1*10,
+              fc1*100,
+              fc1*100,
+              fc1*10,
+              fc1*1000,
+              fc1*10,
+              fc1*10,
+              fc1*1000,
+              fc1*100,
+              rep(0, times=3))
+  colnames(fc) <- percentiles
+  rownames(fc) <- NULL
+  expect_equal(forecast_Ch_PeEn(tel, percentiles, cbind(rep(T, 5), c( T, T, T, T, F)), clearsky_GHI, ts_per_hour=2), fc)
 })
 
 test_that("forecast_Gaussian_hourly throws errors", {

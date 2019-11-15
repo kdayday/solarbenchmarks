@@ -80,19 +80,22 @@ forecast_PeEn_intrahour <- function(GHI, percentiles, sun_up, clearsky_GHI, ts_p
   return(fc)
 }
 
-#' Complete-history persistence ensemble method
+#' Complete-history persistence ensemble method from aggregating clear-sky indices on an hourly basis
 #' 
 #' @param GHI A [day x time] matrix of the telemetry
 #' @param percentiles A vector of the percentiles corresponding to the desired forecast quantiles
 #' @param sun_up A [day x time] matrix of logicals, indicating whether the sun is up
 #' @param clearsky_GHI a [day x time] matrix of clear-sky irradiance estimates
-forecast_Ch_PeEn <- function(GHI, percentiles, sun_up, clearsky_GHI) {
-  n <- ncol(GHI)
+#' @param ts_per_hour Time-steps per hour, e.g., 12 for a 5-minute resolution forecast
+forecast_Ch_PeEn <- function(GHI, percentiles, sun_up, clearsky_GHI, ts_per_hour) {
+  
   # Clear sky indices
   CSI <- GHI/clearsky_GHI
   fc <- sapply(seq_len(nrow(GHI)), FUN=function(day) {
-    sapply(seq_len(ncol(GHI)), FUN=function(hr) {if (isTRUE(sun_up[day, hr])) {
-      stats::quantile(CSI[sun_up[,hr],hr]*clearsky_GHI[day,hr] , probs=percentiles, names=F, na.rm=T, type=1)} else 
+    sapply(seq_len(ncol(GHI)), FUN=function(t) {if (isTRUE(sun_up[day, t])) {
+      # For both hourly and subhourly forecasts, CSI's are grouped hourly. First find the subset of time columns for this hour:
+      cols <- ((ceil(t/ts_per_hour)-1)*ts_per_hour)+1:ts_per_hour
+      stats::quantile(as.vector( CSI[,cols][sun_up[,cols]])*clearsky_GHI[day,t] , probs=percentiles, names=F, na.rm=T, type=1)} else 
       rep(0, times=length(percentiles))})
   }, simplify="array")
   fc <- array(aperm(fc, c(2,3,1)), dim=c(length(GHI), length(percentiles)))
