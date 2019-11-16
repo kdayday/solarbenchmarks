@@ -77,7 +77,6 @@ get_daily_irr <- function(day, site) {
   
   # Calculate irradiance from ssrd 
   irr <- apply(ssrd, MARGIN=c(1,3), FUN=diff)/3600
-  irr <- apply(irr, MARGIN=c(1,2,3), FUN=round)
   # Clean: truncate small negative values to 0
   irr[irr<0] <- 0
   return(irr)
