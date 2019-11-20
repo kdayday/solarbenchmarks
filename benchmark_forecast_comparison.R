@@ -24,6 +24,8 @@ output_directory <- here("Results")
 dir.create(output_directory, showWarnings = FALSE)
 pit_directory <- here("Results", "PIT_histograms")
 dir.create(pit_directory, showWarnings = FALSE)
+ts_directory <- here("Results", "Quantile_time_series")
+dir.create(ts_directory, showWarnings = FALSE)
 
 site_names <- c("Bondville",
                 "Boulder",
@@ -116,7 +118,7 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     
     # If desired, export this forecast matrix of quantiles to a .csv file for future use.
     if (csv_export) {
-      write.table(fc, file=file.path(output_directory, paste(site, res, method, "quantiles.csv", sep=" ")), sep=",", row.names=F)
+      write.table(fc, file=file.path(ts_directory, paste(site, res, method, "quantiles.csv", sep=" ")), sep=",", row.names=F)
     }
     
     # Plot PIT histogram
