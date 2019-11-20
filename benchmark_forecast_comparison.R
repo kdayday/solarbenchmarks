@@ -38,11 +38,15 @@ intervals <- seq(0.1, 0.9, by=0.1) # Central intervals for sharpness evaluation
 num_peen <- 20 # Number of members in the hourly persistence ensemble
 intrahour_training_hours <- 2 # Number of hours of preceeding data to use for training intra-hour PeEn and intra-hour Gaussian methods
 histogram_bins <- 20 # Number of bins to use in PIT histogram
-resolution <- c("Hourly", "Intrahour")
 
-forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn", "ECMWF Ensemble", "ECMWF Gaussian"),
-                      Intrahour=c("Climatology", "Ch-PeEn", "PeEn", "Smart persistence Gaussian"))
+resolution <- c("Hourly") # c("Hourly", "Intrahour")
 
+# Choose the appropriate subset of forecast methods, based on temporal resolution and ECMWF data availability (or not).
+if (all(sapply(site_names, FUN=function(site) paste(site, ".nc", sep="")) %in% list.files(file.path(forecast_directory)))) {
+  forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn", "ECMWF Ensemble", "ECMWF Gaussian"))
+} else forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn"))
+forecast_names$Intrahour<- c("Climatology", "Ch-PeEn", "PeEn", "Smart persistence Gaussian")
+  
 metric_names <- c("CRPS", "Left-tail weighted CRPS", "Center weighted CRPS", "Right-tail weighted CRPS")
 
 # -----------------------------------------------------------------
@@ -57,15 +61,20 @@ R_graph_export <- T
 get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_df) {
   
   # Load GHI ECMWF forecasts
-  nc <- nc_open(file.path(forecast_directory, list.files(file.path(forecast_directory), pattern=site)))
-  nwp <- ncvar_get(nc, varid="irradiance")
-  nc_close(nc)
+  if (file.exists(file.path(forecast_directory, paste(site, ".nc", sep="")))) {
+    nc <- nc_open(file.path(forecast_directory, paste(site, ".nc", sep="")))
+    nwp <- ncvar_get(nc, varid="irradiance")
+    nc_close(nc)
+    ndays <- nrow(nwp) # For loading in the same number of days of SURFRAD data, starting Jan. 1st. Useful during testing
+  } else{ # If data is unavailable
+    ndays <- 365
+  }
   
   # Load GHI telemetry and sun_up indicator
   nc <- nc_open(file.path(telemetry_directory, res, list.files(file.path(telemetry_directory, res), pattern=glob2rx(paste("*", site, "*2018*", sep="")))))
-  GHI <- ncvar_get(nc, varid="irradiance", count=c(dim(nwp)[1], -1))
-  sun_up <- ncvar_get(nc, varid="sun_up", count=c(dim(nwp)[1], -1))
-  clearsky_GHI <- ncvar_get(nc, varid="clearsky_irradiance", count=c(dim(nwp)[1], -1))
+  GHI <- ncvar_get(nc, varid="irradiance", count=c(ndays, -1))
+  sun_up <- ncvar_get(nc, varid="sun_up", count=c(ndays, -1))
+  clearsky_GHI <- ncvar_get(nc, varid="clearsky_irradiance", count=c(ndays, -1))
   nc_close(nc)
   
   sun_up <- apply(sun_up, MARGIN = c(1,2), FUN = as.logical)
