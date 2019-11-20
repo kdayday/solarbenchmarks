@@ -19,7 +19,7 @@ source("forecast_methods.R")
 # Define constants
 
 telemetry_directory <- here("SURFRAD_files", "Yearlong")
-forecast_directory <- here("NetCDF_files", "SURFRAD_sites")
+forecast_directory <- here("ECMWF_files", "SURFRAD_sites")
 output_directory <- here("Results")
 dir.create(output_directory, showWarnings = FALSE)
 pit_directory <- here("Results", "PIT_histograms")

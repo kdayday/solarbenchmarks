@@ -29,8 +29,8 @@ site_coord <- list(Bondville=list(N=40.05192, W=88.37309),
                             Penn_State=list(N=40.72012, W=77.93085),
                             Sioux_Falls=list(N=43.73403, W=96.62328))
 
-input_directory <- here("NetCDF_files", "Raw")
-output_directory <- here("NetCDF_files", "SURFRAD_sites")
+input_directory <- here("ECMWF_files", "Raw")
+output_directory <- here("ECMWF_files", "SURFRAD_sites")
 dir.create(output_directory, showWarnings = FALSE)
 
 month_days <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
