@@ -114,13 +114,32 @@ plot_PIT_histogram  <- function(fc, tel, sun_up, nbins, site, res, method, outpu
 #' @param fc A [valid time x quantile] matrix of probabilistic quantile forecasts, with column names giving the [0,1] percentiles of the forecast
 #' @param tel A vector of the telemetry values
 #' @param window A (min, max) vector of indices, corresponding to the rows of fc to plot
-plot_fanplot <- function(fc, tel, window) {
+#' @param ts_per_hour Time-steps per hour
+#' @param output_directory Directory to save graphs
+#' @param site Site name, for naming output file
+#' @param res Temporal resolution, for naming output file
+#' @param method Forecast method name, for naming output file
+#' @param R_graph_export Boolean, whether to save a .R object of the plot as well
+#' @param ymax Y-axis maximum value (defaults to 1200 W/m^2)
+plot_fanplot <- function(fc, tel, window, ts_per_hour, output_directory, site, res, method, R_graph_export, ymax=1200) {
   df <- rowid_to_column(data.frame(fc[window[1]:window[2],], check.names=F), var="x") 
   df <- gather(df, key="q", value="y", -x, convert=T)
   g <- ggplot(df,  aes(x=x,y=y,quantile=q)) + geom_fan() +
     geom_line(mapping=aes(x=x, y=y), data=data.frame(x=seq_len(diff(window)+1), y=tel[window[1]:window[2]]), col="chocolate3", inherit.aes = F) +
-    theme_bw() + xlab("Time (hours)") + ylab(expression(paste("Irradiance (W/m"^"2", ")")))  +
-    scale_x_continuous(breaks=seq(0, diff(window)+1, by=6))
+    scale_fill_continuous(limits=c(0.02, 0.98), breaks=c(0.02, 0.250, 0.500, 0.750, 0.98), 
+                          guide=guide_colourbar(nbin=98, draw.ulim=F, draw.llim=F)) +
+    theme_bw() + xlab("Time (hours)") + ylab(expression(paste("Irradiance (W/m"^"2", ")"))) + 
+    coord_cartesian(ylim = c(0,1200)) + # Don't truncate data if extends past window
+    scale_y_continuous(breaks=seq(from=0, to=ymax, by=200)) +
+    theme(text=element_text(size=14), legend.title = element_text(vjust=1)) + 
+    # Add x scale with every 6 hours
+    scale_x_continuous(breaks=seq(from=0, to=diff(window)+1, by=6*ts_per_hour), 
+                       labels=seq(from=0, to=(diff(window)+1)/ts_per_hour, by=6))
+  ggsave(file.path(output_directory, paste(site, res, method, "sample.pdf", sep="_")), height=3, width=6)
+  if (R_graph_export) {
+    save(g, file=file.path(output_directory, paste(site, res, method, "sample.R", sep="_")))  
+  }
+  return(g)
 }
 
 # Plot reliability of 1..99 quantiles, comparing among forecast methods for a single site

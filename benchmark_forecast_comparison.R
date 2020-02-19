@@ -124,12 +124,10 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     # Plot PIT histogram
     plot_PIT_histogram(fc, as.vector(t(GHI)), as.vector(t(sun_up)), histogram_bins, site, res, method, pit_directory, R_graph_export)
     
-    # Export sample forecasts
-    g <- plot_fanplot(fc, as.vector(t(tel)), c(1, 72))
-    ggsave(file.path(output_directory, paste(site, method, "sample.pdf", sep="_")), height=4, width=6)
-    save(g, file=file.path(output_directory, paste(site, method, "sample.R", sep="_")))
+    # Export sample forecasts: Days 133-135, May 13-15th
+    window <- c(132*24*ts_per_hour+1 + 6*ts_per_hour, 135*24*ts_per_hour + 6*ts_per_hour)
+    g <- plot_fanplot(fc, as.vector(t(GHI)), window, ts_per_hour, output_directory, site, res, method, R_graph_export)
   }
-  
   return(list(metrics_df=metrics_df, reliability_df=reliability_df, interval_width_df=interval_width_df))
 }
 
