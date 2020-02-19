@@ -109,6 +109,37 @@ plot_PIT_histogram  <- function(fc, tel, sun_up, nbins, site, res, method, outpu
   }
 }
 
+#' Plot unweighted, left-, and right-weighted quantile scores of selected quantiles
+#' @param fc A [valid time x quantile] matrix of probabilistic quantile forecasts, with column names giving the [0,1] percentiles of the forecast
+#' @param tel A vector of the telemetry values
+#' @param sun_up Logical vector of whether sun is up across the forecast times
+#' @param percentiles A vector (0,1) corresponding to the columns of fc
+#' @param site Site name, for naming output file
+#' @param res Temporal resolution, for naming output file
+#' @param method Forecast method name, for naming output file
+#' @param output_directory Directory to save graphs
+#' @param R_graph_export Boolean, whether to save a .R object of the plot as well
+plot_quantile_score  <- function(fc, tel, sun_up, percentiles, site, res, method, output_directory, R_graph_export) {
+  unweighted <- QS(fc, tel, sun_up, percentiles)
+  l_weighted <- weight_QS(unweighted, percentiles, weighting="left")
+  r_weighted <- weight_QS(unweighted, percentiles, weighting="right")
+
+  df <- data.frame(a=unweighted, b=l_weighted, c=r_weighted, q=percentiles)
+  colnames(df) <- c("Unweighted", "Left-weighted", "Right-weighted", "quantiles")
+  df <- melt(df, id.vars=c("quantiles"))
+  
+  g <- ggplot(df, aes(quantiles,value)) + geom_point(aes(colour = variable, shape=variable)) + 
+    geom_line(aes(colour = variable)) +
+    ggplot2::xlab("Quantile") +
+    ggplot2::ylab(expression(paste("Quantile Score (W/m"^"2", ")"))) + 
+    theme(legend.title = element_blank(), legend.justification=c(0,1), legend.position=c(0.02,0.98), text = ggplot2::element_text(size=14))
+  ggsave(file.path(output_directory, paste(site, res, method, "quantile_scores.pdf", sep="_")), height=4, width=6)
+  if (R_graph_export) {
+    save(g, file=file.path(output_directory, paste(site, res, method, "quantile_scores.R", sep="_")))
+  }
+  
+}
+
 #' Plot a fan plot comparing the forecast quantiles to the telemetry
 #'
 #' @param fc A [valid time x quantile] matrix of probabilistic quantile forecasts, with column names giving the [0,1] percentiles of the forecast

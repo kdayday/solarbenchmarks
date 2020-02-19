@@ -26,6 +26,8 @@ pit_directory <- here("Results", "PIT_histograms")
 dir.create(pit_directory, showWarnings = FALSE)
 ts_directory <- here("Results", "Quantile_time_series")
 dir.create(ts_directory, showWarnings = FALSE)
+qs_directory <- here("Results", "Quantile_score_plots")
+dir.create(qs_directory, showWarnings = FALSE)
 
 site_names <- c("Bondville",
                 "Boulder",
@@ -123,6 +125,8 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     
     # Plot PIT histogram
     plot_PIT_histogram(fc, as.vector(t(GHI)), as.vector(t(sun_up)), histogram_bins, site, res, method, pit_directory, R_graph_export)
+    # Plot unweighted and weighted quantile score comparisons
+    plot_quantile_score(fc, as.vector(t(GHI)), as.vector(t(sun_up)), percentiles, site, res, method, qs_directory, R_graph_export)
     
     # Export sample forecasts: Days 133-135, May 13-15th
     window <- c(132*24*ts_per_hour+1 + 6*ts_per_hour, 135*24*ts_per_hour + 6*ts_per_hour)
