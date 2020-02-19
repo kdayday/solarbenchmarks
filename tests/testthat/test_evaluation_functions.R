@@ -1,7 +1,6 @@
-library(testthat)
-
-# Currently set up to run from the Benchmarks_comparison folder
-source("evaluation_functions.R")
+context("solarbenchmarks")
+library(solarbenchmarks)
+library(truncnorm)
 
 test_that("QS function throws error", {
   expect_error(QS(matrix(1:6, ncol=2), tel=1:4, sun_up=c(T,T,T,T), percentiles=NA), "*range and resolution")

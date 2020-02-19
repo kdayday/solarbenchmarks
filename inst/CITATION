@@ -1,0 +1,18 @@
+citHeader("To cite solarbenchmarks in publications use:")
+
+citEntry(entry = "Article",
+  title        = "Benchmark Probabilistic Solar Forecasts: Characteristics and Recommendations",
+  author       = personList(as.person("Kate Doubleday"),
+                   as.person("Vanessa Van Syoc-Hernandez"),
+                   as.person("Bri-Mathias Hodge")),
+  journal      = "Solar Energy",
+  year         = "2020",
+  volume       = "x",
+  number       = "x",
+  pages        = "pp",
+
+  textVersion  =
+  paste("Kate Doubleday, Vanessa Van Syoc-Hernandez, Bri-Mathias Hodge (2020).",
+        "Benchmark Probabilistic Solar Forecasts: Characteristics and Recommendations.",
+        "Solar Energy, x(x), pp-pp.")
+)

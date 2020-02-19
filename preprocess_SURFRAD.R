@@ -10,9 +10,9 @@ library(ncdf4)
 # -----------------------------------------------------------------
 # Define constants
 
-input_directory <- here("SURFRAD_files", "Raw_daily")
+input_directory <- here("SURFRAD_files")
 cs_directory <- here("CAMS_McClear_files")
-output_directory <- here("SURFRAD_files", "Yearlong")
+output_directory <- here("GHI_files")
 dir.create(output_directory, showWarnings = FALSE)
 
 resolution <- c("Hourly", "Intrahour")

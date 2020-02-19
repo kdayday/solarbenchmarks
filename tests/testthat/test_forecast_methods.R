@@ -1,8 +1,7 @@
-library(testthat)
+context("solarbenchmarks")
+library(solarbenchmarks)
 library(truncnorm)
-
-# Currently set up to run from the Benchmarks_comparison folder
-source("forecast_methods.R")
+library(pracma)
 
 test_that("forecast_climatology calculation is correct", {
   percentiles <- seq(0.1, 0.9, by=0.1)
@@ -43,7 +42,7 @@ test_that("forecast_nwp calculation is correct", {
 
 test_that("forecast_PeEn_hourly throws errors", {
   lead_up_GHI <- matrix(c(0:2, 5:7), ncol=2)
-  expect_error(forecast_PeEn_hourly(GHI=NA, percentiles=NA, sun_up=NA, num_peen=5, lead_up_GHI=lead_up_GHI), "days of data*")
+  expect_error(forecast_PeEn_hourly(GHI=NA, percentiles=NA, sun_up=NA, num_days=5, lead_up_GHI=lead_up_GHI), "days of data*")
 })
 
 # Includes test of longer lead_up_GHI than needed, sun down time, and forecasts both with and without lead_up_GHI data
@@ -60,7 +59,7 @@ test_that("forecast_PeEn_hourly calculation is correct", {
               c(0,0,0))
   colnames(fc) <- percentiles
   rownames(fc) <- NULL
-  expect_equal(forecast_PeEn_hourly(tel, percentiles, sun_up, num_peen=2, lead_up_GHI=lead_up_GHI), fc)
+  expect_equal(forecast_PeEn_hourly(tel, percentiles, sun_up, num_days=2, lead_up_GHI=lead_up_GHI), fc)
 })
 
 # Include test of edge cases with no training data yet or no non-NA training data
@@ -102,7 +101,7 @@ test_that("forecast_PeEn_intrahour calculation is correct with multiple hours of
   expect_equal(forecast_PeEn_intrahour(tel, percentiles, sun_up, clearsky_GHI = clearsky_GHI, ts_per_hour=2, nhours=2), fc)
 })
 
-test_that("forecast_Ch_PeEn calculation is correct", {
+test_that("forecast_CH_PeEn calculation is correct", {
   tel <- matrix(c(1, 20, 300, 4, 50, 60, 7, 8, 900, 16), ncol=2)
   clearsky_GHI <- matrix(c(10, 100, 1000, 10, 100, 100, 10, 10, 1000, 10), ncol=2)
   percentiles <- c(0.25, 0.5, 0.75)
@@ -120,10 +119,10 @@ test_that("forecast_Ch_PeEn calculation is correct", {
               rep(0, times=3))
   colnames(fc) <- percentiles
   rownames(fc) <- NULL
-  expect_equal(forecast_Ch_PeEn(tel, percentiles, cbind(rep(T, 5), c( T, T, T, T, F)), clearsky_GHI, ts_per_hour=1), fc)
+  expect_equal(forecast_CH_PeEn(tel, percentiles, cbind(rep(T, 5), c( T, T, T, T, F)), clearsky_GHI, ts_per_hour=1), fc)
 })
 
-test_that("forecast_Ch_PeEn calculation is correct with multiple time points per hour", {
+test_that("forecast_CH_PeEn calculation is correct with multiple time points per hour", {
   tel <- matrix(c(1, 20, 300, 4, 50, 60, 7, 8, 900, 16), ncol=2)
   clearsky_GHI <- matrix(c(10, 100, 1000, 10, 100, 100, 10, 10, 1000, 10), ncol=2)
   percentiles <- c(0.25, 0.5, 0.75)
@@ -140,7 +139,7 @@ test_that("forecast_Ch_PeEn calculation is correct with multiple time points per
               rep(0, times=3))
   colnames(fc) <- percentiles
   rownames(fc) <- NULL
-  expect_equal(forecast_Ch_PeEn(tel, percentiles, cbind(rep(T, 5), c( T, T, T, T, F)), clearsky_GHI, ts_per_hour=2), fc)
+  expect_equal(forecast_CH_PeEn(tel, percentiles, cbind(rep(T, 5), c( T, T, T, T, F)), clearsky_GHI, ts_per_hour=2), fc)
 })
 
 test_that("forecast_Gaussian_hourly throws errors", {
