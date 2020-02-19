@@ -174,9 +174,10 @@ plot_fanplot <- function(fc, tel, window, ts_per_hour, output_directory, site, r
 }
 
 # Plot reliability of 1..99 quantiles, comparing among forecast methods for a single site
-#' @param reliability Data frame of the quantile reliability results for each method
+#' @param reliability_df Data frame of the quantile reliability results for each method
 #' @param site Site name, for naming output file
 #' @param res Temporal resolution, for naming output file
+#' @param shapes List of ggplot2 shapes, one for each method
 #' @param output_directory Directory to save graphs
 #' @param R_graph_export Boolean, whether to save a .R object of the plot as well
 plot_reliability <- function(reliability_df, site, res, shapes, output_directory, R_graph_export) {
@@ -197,6 +198,7 @@ plot_reliability <- function(reliability_df, site, res, shapes, output_directory
 #' @param interval_width_df Data frame of the interval width results for each method
 #' @param site Site name, for naming output file
 #' @param res Temporal resolution, for naming output file
+#' @param shapes List of ggplot2 shapes, one for each method
 #' @param output_directory Directory to save graphs
 #' @param R_graph_export Boolean, whether to save a .R object of the plot as well
 plot_interval_width <- function(interval_width_df, site, res, shapes, output_directory, R_graph_export) {

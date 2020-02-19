@@ -1,5 +1,5 @@
 # Author: Kate Doubleday
-# Last updated: 11/14/2019
+# Last updated: 2/19/2019
 # -----------------------------------------------------------------
 # Load dependencies
 
@@ -43,7 +43,7 @@ num_peen <- 20 # Number of members in the hourly persistence ensemble
 intrahour_training_hours <- 2 # Number of hours of preceeding data to use for training intra-hour PeEn and intra-hour Gaussian methods
 histogram_bins <- 20 # Number of bins to use in PIT histogram
 
-resolution <- c("Hourly") # c("Hourly", "Intrahour")
+resolution <- c("Hourly", "Intrahour")
 
 # Choose the appropriate subset of forecast methods, based on temporal resolution and ECMWF data availability (or not).
 if (all(sapply(site_names, FUN=function(site) paste(site, ".nc", sep="")) %in% list.files(file.path(forecast_directory)))) {
@@ -59,7 +59,7 @@ metric_names <- c("CRPS", "Left-tail weighted CRPS", "Center weighted CRPS", "Ri
 csv_export <- T
 
 # Option to export .R graph objects
-R_graph_export <- T
+R_graph_export <- F
 
 # -----------------------------------------------------------------
 get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_df) {
