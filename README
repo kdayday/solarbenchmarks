@@ -5,15 +5,11 @@ perform the ECMWF-based forecasts are included, but the data is proprietary
 and cannot be directly shared; instead, batch scripts and .R scripts used to access 
 the data are included for those with access to ECMWF's MARS database. 
 
-In an effort to keep the size of the Git repo below 100 MB, priority was placed on 
-making the preprocessed CAMS McClear and SURFRAD data available for users to be able 
-to jump right to comparing the benchmark forecasts. Only a portion of the raw 
-open-source SURFRAD data is included; instructions are given for downloading the rest,
-for those who may want to adjust the preprocessing itself. 
+There are 3 entry points to the package. Most users will want to jump right to #3:
 
 1. If you would like to replicate or change the SURFRAD and/or CAMS McClear data preprocessing:
  - Unzip CAMS_McClear_files.zip
- - Follow the instructions in SURFRAD_files/readme.txt to download the full set of SURFRAD files
+ - Unzip each of the 7 site-specific folders in SURFRAD_files
  - Execute or modify preprocess_SURFRAD.R. This will re-generate the preproessed files in the
  	GHI_files/ (already made available with the Git repo).
 
