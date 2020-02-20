@@ -1,6 +1,9 @@
 # Author: Kate Doubleday
-# Last updated: 11/14/2019
-# This script pre-processes SURFRAD files to make intra-hourly averages for intra-hour forecasting and hourly averages that match the hourly average ECMWF forecasts. 
+# Last updated: 2/20/2020
+# -----------------------------------------------------------------
+# This script pre-processes SURFRAD files to make intra-hourly 
+# averages for intra-hour forecasting and hourly averages that match
+# the hourly average ECMWF forecasts. 
 # -----------------------------------------------------------------
 # Load dependencies
 
@@ -10,9 +13,9 @@ library(ncdf4)
 # -----------------------------------------------------------------
 # Define constants
 
-input_directory <- here("SURFRAD_files", "Raw_daily")
+input_directory <- here("SURFRAD_files")
 cs_directory <- here("CAMS_McClear_files")
-output_directory <- here("SURFRAD_files", "Yearlong")
+output_directory <- here("GHI_files")
 dir.create(output_directory, showWarnings = FALSE)
 
 resolution <- c("Hourly", "Intrahour")

@@ -1,0 +1,1 @@
+This folder should be populated by .nc files by the preprocess_ECMWF.R script, if the ECMWF files are available in the neighboring Raw folder.

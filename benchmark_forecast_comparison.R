@@ -1,32 +1,28 @@
 # Author: Kate Doubleday
-# Last updated: 2/19/2019
+# Last updated: 2/20/2020
+# -----------------------------------------------------------------
+# Execute this script to generate a Results/ folder containing 200+ plots comparing the benchmarks
+# for each of the 7 SURFRAD sites, .csv files containing the forecast quantiles at each
+# time-step through the year 2018, and .csv files comparing the CRPS summary statistics
+# for each site across the methods at each temporal scale. If the ECMWF data is not available,
+# the two ECMWF-based forecasts will be skipped. 
 # -----------------------------------------------------------------
 # Load dependencies
 
-library(here)
-library(ncdf4)
-library(pracma)
-library(truncnorm)
-library(ggplot2)
-library(ggfan)
-library(reshape2)
-library(tidyr)
-library(tibble)
-source("evaluation_functions.R")
-source("forecast_methods.R")
+library(solarbenchmarks)
 
 # -----------------------------------------------------------------
 # Define constants
 
-telemetry_directory <- here("SURFRAD_files", "Yearlong")
-forecast_directory <- here("ECMWF_files", "SURFRAD_sites")
-output_directory <- here("Results")
+telemetry_directory <- here::here("GHI_files")
+forecast_directory <- here::here("ECMWF_files", "SURFRAD_sites")
+output_directory <- here::here("Results")
 dir.create(output_directory, showWarnings = FALSE)
-pit_directory <- here("Results", "PIT_histograms")
+pit_directory <- here::here("Results", "PIT_histograms")
 dir.create(pit_directory, showWarnings = FALSE)
-ts_directory <- here("Results", "Quantile_time_series")
+ts_directory <- here::here("Results", "Quantile_time_series")
 dir.create(ts_directory, showWarnings = FALSE)
-qs_directory <- here("Results", "Quantile_score_plots")
+qs_directory <- here::here("Results", "Quantile_score_plots")
 dir.create(qs_directory, showWarnings = FALSE)
 
 site_names <- c("Bondville",
@@ -39,7 +35,7 @@ site_names <- c("Bondville",
 
 percentiles <- seq(0.01, 0.99, by=0.01)
 intervals <- seq(0.1, 0.9, by=0.1) # Central intervals for sharpness evaluation
-num_peen <- 20 # Number of members in the hourly persistence ensemble
+num_peen_days <- 20 # Number of members in the hourly persistence ensemble
 intrahour_training_hours <- 2 # Number of hours of preceeding data to use for training intra-hour PeEn and intra-hour Gaussian methods
 histogram_bins <- 20 # Number of bins to use in PIT histogram
 
@@ -67,27 +63,27 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
   # Load GHI ECMWF forecasts
   if (file.exists(file.path(forecast_directory, paste(site, ".nc", sep="")))) {
     nc <- nc_open(file.path(forecast_directory, paste(site, ".nc", sep="")))
-    nwp <- ncvar_get(nc, varid="irradiance")
-    nc_close(nc)
+    nwp <- ncdf4::ncvar_get(nc, varid="irradiance")
+    ncdf4::nc_close(nc)
     ndays <- nrow(nwp) # For loading in the same number of days of SURFRAD data, starting Jan. 1st. Useful during testing
   } else{ # If data is unavailable
     ndays <- 365
   }
   
   # Load GHI telemetry and sun_up indicator
-  nc <- nc_open(file.path(telemetry_directory, res, list.files(file.path(telemetry_directory, res), pattern=glob2rx(paste("*", site, "*2018*", sep="")))))
-  GHI <- ncvar_get(nc, varid="irradiance", count=c(ndays, -1))
-  sun_up <- ncvar_get(nc, varid="sun_up", count=c(ndays, -1))
-  clearsky_GHI <- ncvar_get(nc, varid="clearsky_irradiance", count=c(ndays, -1))
-  nc_close(nc)
+  nc <- ncdf4::nc_open(file.path(telemetry_directory, res, list.files(file.path(telemetry_directory, res), pattern=glob2rx(paste("*", site, "*2018*", sep="")))))
+  GHI <- ncdf4::ncvar_get(nc, varid="irradiance", count=c(ndays, -1))
+  sun_up <- ncdf4::ncvar_get(nc, varid="sun_up", count=c(ndays, -1))
+  clearsky_GHI <- ncdf4::ncvar_get(nc, varid="clearsky_irradiance", count=c(ndays, -1))
+  ncdf4::nc_close(nc)
   
   sun_up <- apply(sun_up, MARGIN = c(1,2), FUN = as.logical)
   
   # Load GHI telemetry and sun_up indicator from end of 2017 for PeEn forecast
-  nc <- nc_open(file.path(telemetry_directory, res, list.files(file.path(telemetry_directory, res), pattern=glob2rx(paste("*", site, "*2017*", sep="")))))
-  GHI_2017 <- ncvar_get(nc, varid="irradiance")
-  sun_up_2017 <- ncvar_get(nc, varid="sun_up")
-  nc_close(nc)
+  nc <- ncdf4::nc_open(file.path(telemetry_directory, res, list.files(file.path(telemetry_directory, res), pattern=glob2rx(paste("*", site, "*2017*", sep="")))))
+  GHI_2017 <- ncdf4::ncvar_get(nc, varid="irradiance")
+  sun_up_2017 <- ncdf4::ncvar_get(nc, varid="sun_up")
+  ncdf4::nc_close(nc)
   
   # -----------------------------------------------------------------
   # Conduct forecasts and get metrics 
@@ -99,10 +95,10 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     } else if (method=="ECMWF Ensemble") {
       fc <- forecast_NWP(nwp, percentiles, sun_up)    
     } else if (method=="Ch-PeEn") {
-      fc <- forecast_Ch_PeEn(GHI, percentiles, sun_up, clearsky_GHI, ts_per_hour)    
+      fc <- forecast_CH_PeEn(GHI, percentiles, sun_up, clearsky_GHI, ts_per_hour)    
     } else if (method=="PeEn") {
       if (res == "Hourly") {
-        fc <- forecast_PeEn_hourly(GHI, percentiles, sun_up, num_peen, GHI_2017)      
+        fc <- forecast_PeEn_hourly(GHI, percentiles, sun_up, num_peen_days, GHI_2017)      
       } else fc <- forecast_PeEn_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ts_per_hour=ts_per_hour, nhours=intrahour_training_hours)
     } else if (method=="ECMWF Gaussian"){
       fc <- forecast_Gaussian_hourly(nwp, GHI, percentiles, sun_up, clearsky_GHI)

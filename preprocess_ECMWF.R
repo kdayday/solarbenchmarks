@@ -1,8 +1,11 @@
 # Author: Kate Doubleday
-# Last updated: 10/3/2019
-# This script pre-processes ECMWF NETCDF files to extract their 51 ensemble forecasts of GHI from the SSRD (surface solar radiation downwards) ECMWF parameter.
-# Estimates for the 7 SURFRAD sites are interpolated from the nearest 4 grid points, given a 0.2x0.2 degree lat/lon grid. 
-# GHI forecast time resolution is hourly average.
+# Last updated: 2/20/2020
+# ----------------------------------------------------------------
+# This script pre-processes ECMWF NETCDF files to extract their 51 
+# ensemble forecasts of GHI from the SSRD (surface solar radiation 
+# downwards) ECMWF parameter. Estimates for the 7 SURFRAD sites are 
+# interpolated from the nearest 4 grid points, given a 0.2x0.2 degree 
+# lat/lon grid. GHI forecast time resolution is hourly average.
 # -----------------------------------------------------------------
 # Load dependencies
 library(here)
