@@ -1,0 +1,32 @@
+This package contains the data and functions necessarily to perform 9 benchmark 
+probabilistic solar power forecasts at two temporal resolutions: climatology, 
+CH-PeEn, PeEn, NWP ensemble, and Gaussian error distributions. The functions to 
+perform the ECMWF-based forecasts are included, but the data is proprietary 
+and cannot be directly shared; instead, batch scripts and .R scripts used to access 
+the data are included for those with access to ECMWF's MARS database. 
+
+In an effort to keep the size of the Git repo below 100 MB, priority was placed on 
+making the preprocessed CAMS McClear and SURFRAD data available for users to be able 
+to jump right to comparing the benchmark forecasts. Only a portion of the raw 
+open-source SURFRAD data is included; instructions are given for downloading the rest,
+for those who may want to adjust the preprocessing itself. 
+
+1. If you would like to replicate or change the SURFRAD and/or CAMS McClear data preprocessing:
+ - Unzip CAMS_McClear_files.zip
+ - Follow the instructions in SURFRAD_files/readme.txt to download the full set of SURFRAD files
+ - Execute or modify preprocess_SURFRAD.R. This will re-generate the preproessed files in the
+ 	GHI_files/ (already made available with the Git repo).
+
+2. If you would like to replicate or change the ECMWF data preprocessing:
+ - Follow the instructions in ECMWF_files/readme.txt to download the GRIB files from the 
+ 	ECMWF MARS website and translate to NetCDF files
+ - Execute preprocess_ECMWF.R 
+
+3. If you would like to jump right in to replicating benchmark forecasts with the preprocessed 
+data made available with the package in the GHI_files/ folder:
+ - Execute benchmark_forecast_comparison.R
+ - This will generate a Results/ folder containing 200+ plots comparing the benchmarks
+   for each of the 7 SURFRAD sites, .csv files containing the forecast quantiles at each
+   time-step through the year 2018, and .csv files comparing the CRPS summary statistics
+   for each site across the methods at each temporal scale. If the ECMWF data is not available,
+   the two ECMWF-based forecasts will be skipped. 

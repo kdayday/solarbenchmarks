@@ -14,8 +14,8 @@ for %%d in (01 02 03 04 05 06 07 08 09 10 11 12) do (
    set month[!i!]=%%d
 )	
 
-set /a l_limit=41
-set /a u_limit=l_limit + 10
+set /a l_limit=1
+set /a u_limit=l_limit + 20
 set /a i=1
 for /l %%m in (1,1,12) do (
 	for /l %%d in (1,1,!day[%%m]!) do (
@@ -29,17 +29,16 @@ for /l %%m in (1,1,12) do (
 			echo   date    = 2018!month[%%m]!!day_text!,
 			echo   time    = 00/06/12/18,
 			echo   step    = 0/1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24,
-			echo   type    = perturbed forecast,
+			echo   type    = cf,
 			echo   levtype = sfc,
 			echo   param   = ssrd,
-			echo   number  = 1/to/50, 
 			echo   grid    = 0.2/0.2,
 			echo   area	  = 48.4/-116.2/34.2/-77.8,
-			echo   target  = "north_america_!month[%%m]!!day_text!.grib") > north_america_!month[%%m]!!day_text!.req
+			echo   target  = "north_america_ctrl_!month[%%m]!!day_text!.grib") > north_america_ctrl_!month[%%m]!!day_text!.req
 
-			start python C:\Users\kdoubled\mars\bin\mars north_america_!month[%%m]!!day_text!.req
+			start python C:\Users\kdoubled\mars\bin\mars north_america_ctrl_!month[%%m]!!day_text!.req
 
-			rem rm north_america_!month[%%m]!!day_text!.req
+			rem rm north_america_ctrl_!month[%%m]!!day_text!.req
 		)
 
 		set /A i=i+1

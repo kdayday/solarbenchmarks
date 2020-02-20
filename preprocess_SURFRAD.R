@@ -1,6 +1,9 @@
 # Author: Kate Doubleday
-# Last updated: 11/14/2019
-# This script pre-processes SURFRAD files to make intra-hourly averages for intra-hour forecasting and hourly averages that match the hourly average ECMWF forecasts. 
+# Last updated: 2/20/2020
+# -----------------------------------------------------------------
+# This script pre-processes SURFRAD files to make intra-hourly 
+# averages for intra-hour forecasting and hourly averages that match
+# the hourly average ECMWF forecasts. 
 # -----------------------------------------------------------------
 # Load dependencies
 

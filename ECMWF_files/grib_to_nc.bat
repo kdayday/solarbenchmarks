@@ -23,7 +23,7 @@ for /l %%m in (1,1,12) do (
 			if %%d LSS 10 (set day_text=0%%d)
 			if %%d GEQ 10 (set day_text=%%d)
 
-			start grib_to_netcdf -o North_America\NetCDF_files\north_america_!month[%%m]!!day_text!.nc -T -R 20180101 "North_America\GRIB files\north_america_!month[%%m]!!day_text!.grib"
+			start grib_to_netcdf -o Raw\north_america_!month[%%m]!!day_text!.nc -T -R 20180101 "GRIB files\north_america_!month[%%m]!!day_text!.grib"
 
 		)
 

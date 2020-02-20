@@ -1,11 +1,15 @@
 # Author: Kate Doubleday
-# Last updated: 2/19/2019
+# Last updated: 2/20/2020
+# -----------------------------------------------------------------
+# Execute this script to generate a Results/ folder containing 200+ plots comparing the benchmarks
+# for each of the 7 SURFRAD sites, .csv files containing the forecast quantiles at each
+# time-step through the year 2018, and .csv files comparing the CRPS summary statistics
+# for each site across the methods at each temporal scale. If the ECMWF data is not available,
+# the two ECMWF-based forecasts will be skipped. 
 # -----------------------------------------------------------------
 # Load dependencies
 
 library(solarbenchmarks)
-library(here)
-library(ncdf4)
 
 # -----------------------------------------------------------------
 # Define constants
