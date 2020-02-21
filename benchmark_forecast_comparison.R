@@ -12,6 +12,10 @@
 library(solarbenchmarks)
 
 # -----------------------------------------------------------------
+
+print("Benchmark beginning, and will run for a while. See Results directory and its sub-directories.")
+
+# -----------------------------------------------------------------
 # Define constants
 
 telemetry_directory <- here::here("GHI_files")
