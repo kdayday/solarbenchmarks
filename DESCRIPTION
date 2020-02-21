@@ -1,6 +1,6 @@
 Package: solarbenchmarks
 Title: Intra-Hour and Intra-Day Probabilistic Solar Forecast Benchmarks
-Version: 0.1.0
+Version: 1.0.0
 Authors@R: person("Kate", "Doubleday", email = "kado4165@colorado.edu",
                   role = c("aut", "cre"))
 Description: Implements common benchmark probabilistic solar forecast methods for 
