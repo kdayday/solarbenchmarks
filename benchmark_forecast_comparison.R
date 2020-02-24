@@ -66,7 +66,7 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
   
   # Load GHI ECMWF forecasts
   if (file.exists(file.path(forecast_directory, paste(site, ".nc", sep="")))) {
-    nc <- nc_open(file.path(forecast_directory, paste(site, ".nc", sep="")))
+    nc <- ncdf4::nc_open(file.path(forecast_directory, paste(site, ".nc", sep="")))
     nwp <- ncdf4::ncvar_get(nc, varid="irradiance")
     ncdf4::nc_close(nc)
     ndays <- nrow(nwp) # For loading in the same number of days of SURFRAD data, starting Jan. 1st. Useful during testing
