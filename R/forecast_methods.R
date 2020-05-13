@@ -273,3 +273,73 @@ forecast_Gaussian_intrahour <- function(GHI, percentiles, sun_up, clearsky_GHI, 
   colnames(fc) <- percentiles
   return(fc)
 }
+
+
+#' Do intra-hourly Markov-chain mixture distribution forecast
+#'
+#' Valid for intra-hourly forecasts. This generates a clear-sky index transition
+#' matrix based on the previous 20 days of data before each hourly issue time.
+#' Using that transition matrix, clear-sky index is forecasted over the next D
+#' time steps (i.e., up to 12 for a 5-minute resolution forecast.) Clear-sky
+#' indices above 2 are treated as outliers and are set equal to 1; <1% of times
+#' have CSI > 2. This removes outliers that can reduce resolution in the area
+#' with the bulk of the probability.
+#'
+#' Modified from the main.R script at
+#' https://github.com/SheperoMah/MCM-distribution-forecasting, Reported in: J.
+#' Munkhammar, J. Widén, D. W. van der Meer, Probabilistic forecasting of
+#' high-resolution clear-sky index time-series using a Markov-chain mixture
+#' distribution model, Solar Energy vol. 184, pp. 688-695, 2019.
+#'
+#' @family forecast functions
+#'
+#' @param GHI A vector of the telemetry
+#' @param lead_up_GHI A vector of out-of-sample telemetry for the days leading
+#'   up to the start of the sample period. Number of days must be >= num_days
+#' @param percentiles A vector of the percentiles corresponding to the desired
+#'   forecast quantiles
+#' @param sun_up A vector of logicals, indicating whether the sun is up
+#' @param clearsky_GHI a vector of clear-sky irradiance estimates
+#' @param lead_up_clearsky_GHI A vector of out-of-sample clear-sky irradiance
+#'   estimates for the days leading up to the start of the sample period,
+#'   corresponding to lead_up_GHI
+#' @param ts_per_hour Time-steps per hour, e.g., 12 for a 5-minute resolution
+#'   forecast
+#' @param num_days  Number of days of training data
+#' @param numBins (optional) Number of bins to use in the MCM matrix M. Defaults
+#'   to number of percentiles + 1.
+#' @param numSamples (optional) Number of samples to take from MCM model to
+#'   generate empirical CDF. Defaults to 1000.
+#' @param h_per_day (optional) Hours per day = 24 (useful for testing)
+#' @export
+forecast_mcm <- function(GHI, lead_up_GHI, percentiles, sun_up, clearsky_GHI, 
+                         lead_up_clearsky_GHI, ts_per_hour, num_days, numBins=length(percentiles)+1,
+                         numSamples=1000, h_per_day=24) {
+  if (length(lead_up_GHI)/(h_per_day*ts_per_hour) < num_days) stop(paste("Must have at least", num_days, 
+                                                 "days of data leading up to the forecast period. Given", length(lead_up_GHI)))
+  
+  all_GHI <- c(lead_up_GHI, GHI)
+  all_clearsky <- c(lead_up_clearsky_GHI, clearsky_GHI)
+  CSI <- all_GHI/all_clearsky
+  # If no CSI is available (i.e., night-time), assume clear sky
+  # Remove outlier CSI's -- force to CSI=1
+  CSI[!is.finite(CSI) | CSI > 2] <- 1
+  
+  update_times <- seq(length(lead_up_GHI)+1, length(all_GHI), by=ts_per_hour)
+  fc <- sapply(update_times, FUN=function(i) {
+    training_CSI <- CSI[(i-num_days*h_per_day*ts_per_hour):(i-1)]
+    sapply(seq_len(ts_per_hour), FUN=function(j, training_CSI) {
+      if (isTRUE(sun_up[i-length(lead_up_GHI)+j-1])){
+        p <- mcmFit(training_CSI, numBins, numStepAhead=j)
+        forecastToolsList  <- mcmForecast(p, min(training_CSI), max(training_CSI), CSI[i-1])
+        # Sample, then estimate uniform percentiles through empirical CDF
+        forecastSamples <- mcmRnd(forecastToolsList$binStartingValues, forecastToolsList$transitionProbs, numSamples)
+        xseq <- stats::quantile(forecastSamples, probs=percentiles, names=F, na.rm=T, type=1)*all_clearsky[i+j-1]
+        return(xseq)
+      } else return(rep(0, times=length(percentiles)))}, training_CSI=training_CSI, simplify="array")
+  }, simplify="array")
+
+  fc <- array(aperm(fc, c(2,3,1)), dim=c(length(GHI), length(percentiles)))
+  colnames(fc) <- percentiles
+  return(fc)
+}

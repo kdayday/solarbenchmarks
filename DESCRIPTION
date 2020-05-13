@@ -1,15 +1,18 @@
 Package: solarbenchmarks
 Title: Intra-Hour and Intra-Day Probabilistic Solar Forecast Benchmarks
 Version: 1.0.0
-Authors@R: person("Kate", "Doubleday", email = "kado4165@colorado.edu",
-                  role = c("aut", "cre"))
+Authors@R: c(person("Kate", "Doubleday", email = "kado4165@colorado.edu",
+                  role = c("aut", "cre")),
+           person("Joakim", "Munkhammar", role = "ctb"),
+           person("Mahmoud", "Shepero", role = "ctb"))
 Description: Implements common benchmark probabilistic solar forecast methods for 
 	intra-hour (very short-term) and intra-day (short-term) forecasting. Benchmark methods are 
-	intended as baselines against which forecast improvements are assessed. Five benchmark 
+	intended as baselines against which forecast improvements are assessed. Six benchmark 
 	classes are available: climatology, complete history persistence ensembles, persistence 
-	ensembles, numerical weather prediction ensembles, and Gaussian error distributions. 
-	Open-source SURFRAD (irradiance observations) and CAMS McClear (clear-sky irradiance estimates) 
-	data are packaged for easy comparison across the 7 SURFRAD locations in the U.S. 
+	ensembles, numerical weather prediction ensembles, Gaussian error distributions, and Markov-
+	chain mixture distributions. Open-source SURFRAD (irradiance observations) and CAMS McClear 
+	(clear-sky irradiance estimates) data are packaged for easy comparison across the 7 SURFRAD
+	locations in the U.S. 
 Depends: R (>= 3.5.0)
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -18,6 +21,7 @@ Imports:
 	ggplot2,
 	ggfan,
 	here,
+	matrixcalc,
 	ncdf4,
 	pracma,
 	reshape2,
