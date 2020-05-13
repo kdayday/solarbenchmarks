@@ -81,30 +81,33 @@ export_site_netcdf <- function(site, year) {
     irr <- t(time_series_data[,1,])
     sun_up <- t(time_series_data[,2,])
     
-    if (year==2018) {
-      # Load in CAMS McClear clear-sky information
-      CS <- read.table(file.path(cs_directory, paste(site, ".csv", sep="")), sep=";", skip=38, 
-                       col.names = c("Observation_period", "TOA", "Clear_sky_GHI", "Clear_sky_BHI", "Clear_sky_DHI", "Clear_sky_BNI"))
-      CS_GHI <- CS[, "Clear_sky_GHI"]*60 # Convert from Wh/m^2 with 1 min integration period to W/m^2
-      # Average over window for this forecast's resolution
-      CS_GHI <- matrix(sapply(1:(1440/duration[[res]]*365), FUN=function(i) {mean(CS_GHI[(duration[[res]]*(i-1)+1):(duration[[res]]*i)])}), byrow = T, nrow = 365)
-    }
+    if (year==2017) {d_vals <- 1:20} else {d_vals <- 1:365}
+    ndays <- length(d_vals)
+    
+    # Load in CAMS McClear clear-sky information
+    CS <- read.table(file.path(cs_directory, paste(site, "_", year, ".csv", sep="")), sep=";", skip=38, 
+                     col.names = c("Observation_period", "TOA", "Clear_sky_GHI", "Clear_sky_BHI", 
+                                   "Clear_sky_DHI", "Clear_sky_BNI"))
+    CS_GHI <- CS[, "Clear_sky_GHI"]*60 # Convert from Wh/m^2 with 1 min integration period to W/m^2
+    # Average over window for this forecast's resolution
+    CS_GHI <- matrix(sapply(1:(1440/duration[[res]]*ndays), 
+                            FUN=function(i) {mean(CS_GHI[(duration[[res]]*(i-1)+1):(duration[[res]]*i)])}), 
+                     byrow = T, nrow = ndays)
       
     # Parameters for new NetCDF file
-    if (year==2017) {d_vals <- 1:20} else {d_vals <- 1:365}
     t_vals <- 1:(1440/duration[[res]])
     dims <- mapply(ncdim_def, name=c('Day', 'Hour'), units=c('', ''), vals=list(d_vals, t_vals), 
                    longname=c("Day number", "Hour of day"), SIMPLIFY = FALSE)
     ivar <- ncvar_def("irradiance", "W/m^2", dims, missval=NA, compression = 9)
     svar <- ncvar_def("sun_up", "", dims, compression = 9, prec="integer")
     csvar <- ncvar_def("clearsky_irradiance", "W/m^2", dims, missval=NA, compression = 9)
-    if (year==2018) {vars <- list(ivar, svar, csvar)} else {vars <- list(ivar, svar)}
+    vars <- list(ivar, svar, csvar)
     
     # Export new NetCDF file
     nc_new <- nc_create(file.path(output_directory, res, paste(site, "_", year, ".nc", sep='')), vars)
     ncvar_put(nc_new, ivar, irr, count=ivar[['varsize']])
     ncvar_put(nc_new, svar, sun_up, count=svar[['varsize']])
-    if (year==2018) ncvar_put(nc_new, csvar, CS_GHI, count=svar[['varsize']])
+    ncvar_put(nc_new, csvar, CS_GHI, count=svar[['varsize']])
     nc_close(nc_new)  
   }
 }
