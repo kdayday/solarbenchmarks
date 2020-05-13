@@ -41,6 +41,7 @@ Other forecast functions: \code{\link{forecast_Gaussian_hourly}},
   \code{\link{forecast_NWP}},
   \code{\link{forecast_PeEn_hourly}},
   \code{\link{forecast_PeEn_intrahour}},
-  \code{\link{forecast_climatology}}
+  \code{\link{forecast_climatology}},
+  \code{\link{forecast_mcm}}
 }
 \concept{forecast functions}
