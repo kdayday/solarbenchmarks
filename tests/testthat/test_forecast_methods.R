@@ -244,13 +244,13 @@ test_that("forecast_mcm calculation is correct", {
   GHI <- c(7, 8, 9, 15, 8, 50, 4, 16, 16)
   clearsky_GHI <- c(10, 10, 10, 20, 16, 20, 20, 20, 20)
   lead_up_GHI <- c(1:10, 20, 12, 18, 14, 16, 18, 18, NA)
-  lead_up_clearsky_GHI <- c(rep(10, times=10), rep(20, times=6), 3, 1) # Last are outlier, missing
+  lead_up_clearsky_GHI <- c(rep(10, times=10), rep(20, times=6), 18, 1) # Last are outlier, missing
   percentiles <- c(0.25, 0.5, 0.75)
   
   # Training:
   # 0.1, 0.2, 0.3, ..., 1, 1, 0.6, 0.9, 0.7, 0.8, 0.9, 1, 1
   # Testing:
-  # 0.7, 0.8, 0.9, 0.75, 0.5, 1, 0.2, 0.8, 0.8
+  # 0.7, 0.8, 0.9, 0.75, 0.5, 2.5, 0.2, 0.8, 0.8
 
   fc <- rbind(rep(13.4*10, times=3), # 12.4 + 1
               rep(25.8*10, times=3), # 12.4*2 + 1
@@ -259,8 +259,8 @@ test_that("forecast_mcm calculation is correct", {
               rep(29.3*16, times=3), # 14.2*2 + 0.9
               rep(43.5*20, times=3), # 14.2*3 + 0.9 
               rep(0, times=3), # sun down
-              rep(30.9*20, times=3), # 14.95*2 + 1 (truncated outlier)
-              rep(45.85*20, times=3)) # 14.95*3 + 1 (truncated outlier)
+              rep(35.4*20, times=3), # 16.45*2 + 2.5 (untruncated outlier)
+              rep(51.85*20, times=3)) # 16.45*3 + 2.5 (untruncated outlier)
   
   colnames(fc) <- percentiles
   rownames(fc) <- NULL

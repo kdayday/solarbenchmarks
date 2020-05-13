@@ -280,10 +280,7 @@ forecast_Gaussian_intrahour <- function(GHI, percentiles, sun_up, clearsky_GHI, 
 #' Valid for intra-hourly forecasts. This generates a clear-sky index transition
 #' matrix based on the previous 20 days of data before each hourly issue time.
 #' Using that transition matrix, clear-sky index is forecasted over the next D
-#' time steps (i.e., up to 12 for a 5-minute resolution forecast.) Clear-sky
-#' indices above 2 are treated as outliers and are set equal to 1; <1% of times
-#' have CSI > 2. This removes outliers that can reduce resolution in the area
-#' with the bulk of the probability.
+#' time steps (i.e., up to 12 for a 5-minute resolution forecast.) 
 #'
 #' Modified from the main.R script at
 #' https://github.com/SheperoMah/MCM-distribution-forecasting, Reported in: J.
@@ -322,8 +319,7 @@ forecast_mcm <- function(GHI, lead_up_GHI, percentiles, sun_up, clearsky_GHI,
   all_clearsky <- c(lead_up_clearsky_GHI, clearsky_GHI)
   CSI <- all_GHI/all_clearsky
   # If no CSI is available (i.e., night-time), assume clear sky
-  # Remove outlier CSI's -- force to CSI=1
-  CSI[!is.finite(CSI) | CSI > 2] <- 1
+  CSI[!is.finite(CSI)] <- 1
   
   update_times <- seq(length(lead_up_GHI)+1, length(all_GHI), by=ts_per_hour)
   fc <- sapply(update_times, FUN=function(i) {
