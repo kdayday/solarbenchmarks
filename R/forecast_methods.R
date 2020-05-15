@@ -330,6 +330,8 @@ forecast_mcm <- function(GHI, lead_up_GHI, percentiles, sun_up, lead_up_sun_up, 
   fc <- sapply(update_times, FUN=function(i) {
     # Select training data from last num_days, only using times when sun is up
     training_CSI <- CSI[(i-num_days*h_per_day*ts_per_hour):(i-1)][all_sun_up[(i-num_days*h_per_day*ts_per_hour):(i-1)]]
+    # Remove missing values (from missing sun-up values)
+    training_CSI <- training_CSI[!is.na(training_CSI)]
     sapply(seq_len(ts_per_hour), FUN=function(j, training_CSI) {
       if (isTRUE(all_sun_up[i+j-1])){
         p <- mcmFit(training_CSI, numBins, numStepAhead=j)
