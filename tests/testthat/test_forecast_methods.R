@@ -227,3 +227,46 @@ test_that("forecast_Gaussian_intrahour calculation is correct with multiple hour
             qtruncnorm=function(p, a, b, mean, sd) return(rep(mean+sd, times=length(p))),
             expect_equal(forecast_Gaussian_intrahour(GHI, percentiles, sun_up, clearsky_GHI, ts_per_hour =2, nhours=2), fc))
 })
+
+test_that("forecast_mcm throws error", {
+  sun_up <- c(T, T, T, T,  T, T)
+  GHI <- c(7, 8, 10, 15, 8, 16)
+  clearsky_GHI <- c(10, 10, 10, 20, 16, 20)
+  lead_up_GHI <- 1:576
+  percentiles <- c(0.25, 0.5, 0.75)
+  
+  expect_error(forecast_mcm(GHI=GHI, lead_up_GHI, percentiles, sun_up, clearsky_GHI, 
+                           lead_up_clearsky_GHI=NULL, ts_per_hour=12, num_days=20), "Must have*")
+})
+
+test_that("forecast_mcm calculation is correct", {
+  sun_up <- c(T, T, T, T, T, T, F, T, T)
+  GHI <- c(7, 8, 9, 15, 8, 50, 4, 16, 16)
+  clearsky_GHI <- c(10, 10, 10, 20, 16, 20, 20, 20, 20)
+  lead_up_GHI <- c(1:10, 20, 12, 18, 14, 16, 18, 18, NA)
+  lead_up_clearsky_GHI <- c(rep(10, times=10), rep(20, times=6), 18, 1) # Last are outlier, missing
+  percentiles <- c(0.25, 0.5, 0.75)
+  
+  # Training:
+  # 0.1, 0.2, 0.3, ..., 1, 1, 0.6, 0.9, 0.7, 0.8, 0.9, 1, 1
+  # Testing:
+  # 0.7, 0.8, 0.9, 0.75, 0.5, 2.5, 0.2, 0.8, 0.8
+
+  fc <- rbind(rep(13.4*10, times=3), # 12.4 + 1
+              rep(25.8*10, times=3), # 12.4*2 + 1
+              rep(38.2*10, times=3), # 12.4*3 + 1
+              rep(15.1*20, times=3), # 14.2 + 0.9
+              rep(29.3*16, times=3), # 14.2*2 + 0.9
+              rep(43.5*20, times=3), # 14.2*3 + 0.9 
+              rep(0, times=3), # sun down
+              rep(35.4*20, times=3), # 16.45*2 + 2.5 (untruncated outlier)
+              rep(51.85*20, times=3)) # 16.45*3 + 2.5 (untruncated outlier)
+  
+  colnames(fc) <- percentiles
+  rownames(fc) <- NULL
+  with_mock(mcmFit=function(training_CSI, numBins, numStepAhead) return(sum(training_CSI)*numStepAhead),
+            mcmForecast=function(p, min, max, obs) return(list(transitionProbs=p+obs, binStartingValues=NULL)),
+            mcmRnd=function(bins, probs, numSamples=3) return(rep(probs, times=length(numSamples))),
+            expect_equal(forecast_mcm(GHI=GHI, lead_up_GHI, percentiles, sun_up, clearsky_GHI, 
+                                      lead_up_clearsky_GHI, ts_per_hour=3, num_days=2, h_per_day=3), fc))
+})

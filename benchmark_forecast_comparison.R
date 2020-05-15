@@ -1,5 +1,5 @@
 # Author: Kate Doubleday
-# Last updated: 2/20/2020
+# Last updated: 5/13/2020
 # -----------------------------------------------------------------
 # Execute this script to generate a Results/ folder containing 200+ plots comparing the benchmarks
 # for each of the 7 SURFRAD sites, .csv files containing the forecast quantiles at each
@@ -41,6 +41,7 @@ percentiles <- seq(0.01, 0.99, by=0.01)
 intervals <- seq(0.1, 0.9, by=0.1) # Central intervals for sharpness evaluation
 num_peen_days <- 20 # Number of members in the hourly persistence ensemble
 intrahour_training_hours <- 2 # Number of hours of preceeding data to use for training intra-hour PeEn and intra-hour Gaussian methods
+mcm_training_days <- 20 # Number of days of preceeding data to use for training intra-hour MCM method
 histogram_bins <- 20 # Number of bins to use in PIT histogram
 
 resolution <- c("Hourly", "Intrahour")
@@ -49,7 +50,7 @@ resolution <- c("Hourly", "Intrahour")
 if (all(sapply(site_names, FUN=function(site) paste(site, ".nc", sep="")) %in% list.files(file.path(forecast_directory)))) {
   forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn", "ECMWF Ensemble", "ECMWF Gaussian"))
 } else forecast_names <- list(Hourly=c("Climatology", "Ch-PeEn", "PeEn"))
-forecast_names$Intrahour<- c("Climatology", "Ch-PeEn", "PeEn", "Smart persistence Gaussian")
+forecast_names$Intrahour<- c("Climatology", "Ch-PeEn", "PeEn", "Smart persistence Gaussian", "MCM")
   
 metric_names <- c("CRPS", "Left-tail weighted CRPS", "Center weighted CRPS", "Right-tail weighted CRPS")
 
@@ -86,7 +87,7 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
   # Load GHI telemetry and sun_up indicator from end of 2017 for PeEn forecast
   nc <- ncdf4::nc_open(file.path(telemetry_directory, res, list.files(file.path(telemetry_directory, res), pattern=glob2rx(paste("*", site, "*2017*", sep="")))))
   GHI_2017 <- ncdf4::ncvar_get(nc, varid="irradiance")
-  sun_up_2017 <- ncdf4::ncvar_get(nc, varid="sun_up")
+  clearsky_GHI_2017 <- ncdf4::ncvar_get(nc, varid="clearsky_irradiance")
   ncdf4::nc_close(nc)
   
   # -----------------------------------------------------------------
@@ -103,11 +104,17 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
     } else if (method=="PeEn") {
       if (res == "Hourly") {
         fc <- forecast_PeEn_hourly(GHI, percentiles, sun_up, num_peen_days, GHI_2017)      
-      } else fc <- forecast_PeEn_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ts_per_hour=ts_per_hour, nhours=intrahour_training_hours)
+      } else fc <- forecast_PeEn_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), 
+                                           as.vector(t(clearsky_GHI)), ts_per_hour=ts_per_hour, nhours=intrahour_training_hours)
     } else if (method=="ECMWF Gaussian"){
       fc <- forecast_Gaussian_hourly(nwp, GHI, percentiles, sun_up, clearsky_GHI)
     } else if (method=="Smart persistence Gaussian") { 
-      fc <- forecast_Gaussian_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)), ts_per_hour=ts_per_hour, nhours=intrahour_training_hours)
+      fc <- forecast_Gaussian_intrahour(as.vector(t(GHI)), percentiles, as.vector(t(sun_up)), 
+                                        as.vector(t(clearsky_GHI)), ts_per_hour=ts_per_hour, nhours=intrahour_training_hours)
+    } else if (method=="MCM") { 
+      fc <- forecast_mcm(as.vector(t(GHI)), as.vector(t(GHI_2017)), 
+                         percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)),
+                         as.vector(t(clearsky_GHI_2017)), ts_per_hour, mcm_training_days)
     } else stop(paste("Forecast method", method, "not recognized"))
   
     metrics_df[site, method, "CRPS"] <- qwCRPS(fc, as.vector(t(GHI)), as.vector(t(sun_up)), weighting = "none")
