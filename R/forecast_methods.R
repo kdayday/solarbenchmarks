@@ -296,6 +296,9 @@ forecast_Gaussian_intrahour <- function(GHI, percentiles, sun_up, clearsky_GHI, 
 #' @param percentiles A vector of the percentiles corresponding to the desired
 #'   forecast quantiles
 #' @param sun_up A vector of logicals, indicating whether the sun is up
+#' @param lead_up_sun_up A vector of logicals, indicating whether the sun is up
+#'   for the days leading up to the start of the sample period, corresponding to
+#'   lead_up_GHI
 #' @param clearsky_GHI a vector of clear-sky irradiance estimates
 #' @param lead_up_clearsky_GHI A vector of out-of-sample clear-sky irradiance
 #'   estimates for the days leading up to the start of the sample period,
@@ -309,7 +312,7 @@ forecast_Gaussian_intrahour <- function(GHI, percentiles, sun_up, clearsky_GHI, 
 #'   generate empirical CDF. Defaults to 1000.
 #' @param h_per_day (optional) Hours per day = 24 (useful for testing)
 #' @export
-forecast_mcm <- function(GHI, lead_up_GHI, percentiles, sun_up, clearsky_GHI, 
+forecast_mcm <- function(GHI, lead_up_GHI, percentiles, sun_up, lead_up_sun_up, clearsky_GHI, 
                          lead_up_clearsky_GHI, ts_per_hour, num_days, numBins=length(percentiles)+1,
                          numSamples=1000, h_per_day=24) {
   if (length(lead_up_GHI)/(h_per_day*ts_per_hour) < num_days) stop(paste("Must have at least", num_days, 
@@ -317,15 +320,18 @@ forecast_mcm <- function(GHI, lead_up_GHI, percentiles, sun_up, clearsky_GHI,
   
   all_GHI <- c(lead_up_GHI, GHI)
   all_clearsky <- c(lead_up_clearsky_GHI, clearsky_GHI)
+  all_sun_up <- c(lead_up_sun_up, sun_up)
   CSI <- all_GHI/all_clearsky
+  
   # If no CSI is available (i.e., night-time), assume clear sky
   CSI[!is.finite(CSI)] <- 1
   
   update_times <- seq(length(lead_up_GHI)+1, length(all_GHI), by=ts_per_hour)
   fc <- sapply(update_times, FUN=function(i) {
-    training_CSI <- CSI[(i-num_days*h_per_day*ts_per_hour):(i-1)]
+    # Select training data from last num_days, only using times when sun is up
+    training_CSI <- CSI[(i-num_days*h_per_day*ts_per_hour):(i-1)][all_sun_up[(i-num_days*h_per_day*ts_per_hour):(i-1)]]
     sapply(seq_len(ts_per_hour), FUN=function(j, training_CSI) {
-      if (isTRUE(sun_up[i-length(lead_up_GHI)+j-1])){
+      if (isTRUE(all_sun_up[i+j-1])){
         p <- mcmFit(training_CSI, numBins, numStepAhead=j)
         forecastToolsList  <- mcmForecast(p, min(training_CSI), max(training_CSI), CSI[i-1])
         # Sample, then estimate uniform percentiles through empirical CDF
