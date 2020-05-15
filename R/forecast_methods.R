@@ -335,7 +335,13 @@ forecast_mcm <- function(GHI, lead_up_GHI, percentiles, sun_up, lead_up_sun_up, 
     sapply(seq_len(ts_per_hour), FUN=function(j, training_CSI) {
       if (isTRUE(all_sun_up[i+j-1])){
         p <- mcmFit(training_CSI, numBins, numStepAhead=j)
-        forecastToolsList  <- mcmForecast(p, min(training_CSI), max(training_CSI), CSI[i-1])
+        # Obs is set to boundary values if it falls outside training range
+        if (CSI[i-1] < min(training_CSI)) {
+          obs <- min(training_CSI)
+        } else if (CSI[i-1] > max(training_CSI)) {
+          obs <- max(training_CSI)
+        } else obs <- CSI[i-1]
+        forecastToolsList  <- mcmForecast(p, min(training_CSI), max(training_CSI), obs)
         # Sample, then estimate uniform percentiles through empirical CDF
         forecastSamples <- mcmRnd(forecastToolsList$binStartingValues, forecastToolsList$transitionProbs, numSamples)
         xseq <- stats::quantile(forecastSamples, probs=percentiles, names=F, na.rm=T, type=1)*all_clearsky[i+j-1]
