@@ -243,9 +243,9 @@ plot_reliability <- function(reliability_df, site, res, shapes, output_directory
     ggplot2::geom_point(ggplot2::aes(colour = Method, shape=Method)) + 
     ggplot2::geom_line(ggplot2::aes(colour = Method)) + 
     ggplot2::xlab("Nominal proportion") + ggplot2::ylab("Observed proportion") + 
-    ggplot2::scale_shape_manual(values = shapes[1:nrow(reliability_df)]) + 
+    ggplot2::scale_shape_manual(values = shapes[1:ncol(reliability_df)]) + 
     ggplot2::geom_line(data = data.frame(x=c(0,1), y=c(0,1)), mapping=ggplot2::aes(x=x,y=y), col="black") + 
-    ggplot2::theme(legend.justification=c(1,0), legend.position=c(0.98,0.02), text = ggplot2::element_text(size=14))
+    ggplot2::theme(legend.justification=c(0,1), legend.position=c(0.02,0.98), text = ggplot2::element_text(size=14))
   ggplot2::ggsave(file.path(output_directory, paste(site, res, "reliability.pdf", sep="_")), height=4, width=8)
   if (R_graph_export) {
     save(g, file=file.path(output_directory, paste(site, res, "reliability_plot.R", sep="_")))
@@ -273,7 +273,7 @@ plot_interval_width <- function(interval_width_df, site, res, shapes, output_dir
   g <- ggplot2::ggplot(df, ggplot2::aes(levels,value)) + 
     ggplot2::geom_point(ggplot2::aes(colour = Method, shape=Method)) + ggplot2::geom_line(ggplot2::aes(colour = Method)) + 
     ggplot2::xlab("Central Interval (%)") + ggplot2::ylab(expression(paste("Average Width (W/m"^"2", ")"))) + 
-    ggplot2::scale_shape_manual(values = shapes[1:nrow(interval_width_df)]) + 
+    ggplot2::scale_shape_manual(values = shapes[1:ncol(interval_width_df)]) + 
     ggplot2::theme(legend.justification=c(0,1), legend.position=c(0.02,0.98), text = ggplot2::element_text(size=14)) + 
     ggplot2::scale_x_continuous(breaks=intervals, labels=intervals*100)
   ggplot2::ggsave(file.path(output_directory, paste(site, res, "interval_width.pdf", sep="_")), height=4, width=8)

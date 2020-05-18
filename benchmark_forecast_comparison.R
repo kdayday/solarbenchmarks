@@ -88,7 +88,9 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
   nc <- ncdf4::nc_open(file.path(telemetry_directory, res, list.files(file.path(telemetry_directory, res), pattern=glob2rx(paste("*", site, "*2017*", sep="")))))
   GHI_2017 <- ncdf4::ncvar_get(nc, varid="irradiance")
   clearsky_GHI_2017 <- ncdf4::ncvar_get(nc, varid="clearsky_irradiance")
+  sun_up_2017 <- ncdf4::ncvar_get(nc, varid="sun_up")
   ncdf4::nc_close(nc)
+  sun_up_2017 <- apply(sun_up_2017, MARGIN = c(1,2), FUN = as.logical)
   
   # -----------------------------------------------------------------
   # Conduct forecasts and get metrics 
@@ -113,8 +115,9 @@ get_site_data <- function(res, site, metrics_df, reliability_df, interval_width_
                                         as.vector(t(clearsky_GHI)), ts_per_hour=ts_per_hour, nhours=intrahour_training_hours)
     } else if (method=="MCM") { 
       fc <- forecast_mcm(as.vector(t(GHI)), as.vector(t(GHI_2017)), 
-                         percentiles, as.vector(t(sun_up)), as.vector(t(clearsky_GHI)),
-                         as.vector(t(clearsky_GHI_2017)), ts_per_hour, mcm_training_days)
+                         percentiles, as.vector(t(sun_up)), as.vector(t(sun_up_2017)), 
+                         as.vector(t(clearsky_GHI)), as.vector(t(clearsky_GHI_2017)), 
+                         ts_per_hour, mcm_training_days)
     } else stop(paste("Forecast method", method, "not recognized"))
   
     metrics_df[site, method, "CRPS"] <- qwCRPS(fc, as.vector(t(GHI)), as.vector(t(sun_up)), weighting = "none")

@@ -243,7 +243,8 @@ test_that("forecast_mcm calculation is correct", {
   sun_up <- c(T, T, T, T, T, T, F, T, T)
   GHI <- c(7, 8, 9, 15, 8, 50, 4, 16, 16)
   clearsky_GHI <- c(10, 10, 10, 20, 16, 20, 20, 20, 20)
-  lead_up_GHI <- c(1:10, 20, 12, 18, 14, 16, 18, 18, NA)
+  lead_up_sun_up <- c(rep(F, times=3), rep(T, times=15)) # First 3 ignored
+  lead_up_GHI <- c(1:10, 20, 12, 18, 14, 16, 18, 18, NA) # First 3 ignored
   lead_up_clearsky_GHI <- c(rep(10, times=10), rep(20, times=6), 18, 1) # Last are outlier, missing
   percentiles <- c(0.25, 0.5, 0.75)
   
@@ -252,9 +253,9 @@ test_that("forecast_mcm calculation is correct", {
   # Testing:
   # 0.7, 0.8, 0.9, 0.75, 0.5, 2.5, 0.2, 0.8, 0.8
 
-  fc <- rbind(rep(13.4*10, times=3), # 12.4 + 1
-              rep(25.8*10, times=3), # 12.4*2 + 1
-              rep(38.2*10, times=3), # 12.4*3 + 1
+  fc <- rbind(rep(12.8*10, times=3), # 11.8 + 1
+              rep(24.6*10, times=3), # 11.8*2 + 1
+              rep(36.4*10, times=3), # 11.8*3 + 1
               rep(15.1*20, times=3), # 14.2 + 0.9
               rep(29.3*16, times=3), # 14.2*2 + 0.9
               rep(43.5*20, times=3), # 14.2*3 + 0.9 
@@ -267,6 +268,6 @@ test_that("forecast_mcm calculation is correct", {
   with_mock(mcmFit=function(training_CSI, numBins, numStepAhead) return(sum(training_CSI)*numStepAhead),
             mcmForecast=function(p, min, max, obs) return(list(transitionProbs=p+obs, binStartingValues=NULL)),
             mcmRnd=function(bins, probs, numSamples=3) return(rep(probs, times=length(numSamples))),
-            expect_equal(forecast_mcm(GHI=GHI, lead_up_GHI, percentiles, sun_up, clearsky_GHI, 
+            expect_equal(forecast_mcm(GHI=GHI, lead_up_GHI, percentiles, sun_up, lead_up_sun_up, clearsky_GHI, 
                                       lead_up_clearsky_GHI, ts_per_hour=3, num_days=2, h_per_day=3), fc))
 })

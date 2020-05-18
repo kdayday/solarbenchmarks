@@ -4,8 +4,8 @@
 \alias{forecast_mcm}
 \title{Do intra-hourly Markov-chain mixture distribution forecast}
 \usage{
-forecast_mcm(GHI, lead_up_GHI, percentiles, sun_up, clearsky_GHI,
-  lead_up_clearsky_GHI, ts_per_hour, num_days,
+forecast_mcm(GHI, lead_up_GHI, percentiles, sun_up, lead_up_sun_up,
+  clearsky_GHI, lead_up_clearsky_GHI, ts_per_hour, num_days,
   numBins = length(percentiles) + 1, numSamples = 1000,
   h_per_day = 24)
 }
@@ -19,6 +19,10 @@ up to the start of the sample period. Number of days must be >= num_days}
 forecast quantiles}
 
 \item{sun_up}{A vector of logicals, indicating whether the sun is up}
+
+\item{lead_up_sun_up}{A vector of logicals, indicating whether the sun is up
+for the days leading up to the start of the sample period, corresponding to
+lead_up_GHI}
 
 \item{clearsky_GHI}{a vector of clear-sky irradiance estimates}
 
